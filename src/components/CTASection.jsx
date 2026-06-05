@@ -4,7 +4,7 @@ export default function CTASection() {
       className="text-white"
       style={{
         backgroundImage:
-          "linear-gradient(rgba(15,44,77,.86), rgba(10,31,55,.92)), url('/imagenes/consulta.png')",
+          "linear-gradient(rgba(15,44,77,.86), rgba(10,31,55,.92)), url('/imagenes/consulta.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}

@@ -43,7 +43,7 @@ export default function SocialProof() {
       className="py-20 md:py-28 text-white"
       style={{
         backgroundImage:
-          "linear-gradient(rgba(15,44,77,.94), rgba(10,31,55,.97)), url('/imagenes/justicia.png')",
+          "linear-gradient(rgba(15,44,77,.94), rgba(10,31,55,.97)), url('/imagenes/justicia.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}

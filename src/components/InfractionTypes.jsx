@@ -38,7 +38,7 @@ export default function InfractionTypes() {
           {/* LEFT — imagen */}
           <div className="relative">
             <img
-              src="/imagenes/multa.png"
+              src="/imagenes/multa.jpg"
               alt="Agente de tráfico tramitando una multa"
               className="w-full rounded-2xl shadow-xl object-cover aspect-[4/3] lg:aspect-[3/4]"
             />

@@ -4,7 +4,21 @@ import { useEffect } from "react";
 export default function LegalLayout({ title, children }) {
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+    const prev = document.title;
+    document.title = `${title} — Rivero Abogados`;
+    const meta = document.querySelector('meta[name="description"]');
+    const prevDesc = meta ? meta.getAttribute("content") : null;
+    if (meta) {
+      meta.setAttribute(
+        "content",
+        `${title} de Rivero Abogados, despacho especialista en multas y sanciones de tráfico.`
+      );
+    }
+    return () => {
+      document.title = prev;
+      if (meta && prevDesc !== null) meta.setAttribute("content", prevDesc);
+    };
+  }, [title]);
 
   return (
     <div className="min-h-screen bg-white">

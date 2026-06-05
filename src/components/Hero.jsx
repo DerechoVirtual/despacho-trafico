@@ -19,7 +19,7 @@ export default function Hero() {
       className="relative min-h-screen flex flex-col justify-between bg-cover bg-center"
       style={{
         backgroundImage:
-          "linear-gradient(90deg, rgba(15,44,77,.94) 0%, rgba(15,44,77,.72) 45%, rgba(15,44,77,.30) 100%), url('/imagenes/hero.png')",
+          "linear-gradient(90deg, rgba(15,44,77,.94) 0%, rgba(15,44,77,.72) 45%, rgba(15,44,77,.30) 100%), url('/imagenes/hero.jpg')",
       }}
     >
       {/* Contenido principal */}

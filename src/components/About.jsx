@@ -14,7 +14,7 @@ export default function About() {
           {/* COLUMNA IZQUIERDA — Imagen + badge */}
           <div className="relative">
             <img
-              src="/imagenes/abogado.png"
+              src="/imagenes/abogado.jpg"
               alt="Carlos Rivero García, abogado especialista en derecho de tráfico"
               className="w-full rounded-2xl shadow-xl object-cover"
             />

@@ -6,6 +6,9 @@ dist/
 dist-ssr/
 *.local
 
+# Vercel
+.vercel
+
 # Variables de entorno y secretos — NUNCA subir
 .env
 .env.*
@@ -22,3 +25,16 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Imágenes fuente originales sin optimizar (se usan las .jpg optimizadas en public/imagenes/)
+/imagenes/
+public/imagenes/*.png
+
+# Versión estática HTML anterior (histórico, no forma parte del sitio React)
+_static_anterior/
+
+# Notas internas del proyecto (no forman parte del sitio público)
+CLAUDE.md
+
+# Configuración local de herramientas
+.claude/
