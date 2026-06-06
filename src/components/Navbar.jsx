@@ -109,6 +109,14 @@ export default function Navbar() {
                 </NavLink>
               )
             )}
+            <a
+              href="https://proyecto-crm-abogados.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full border border-navy/25 px-5 py-2.5 font-semibold text-navy transition hover:border-navy hover:bg-navy/5"
+            >
+              Acceso a la plataforma
+            </a>
             <Link
               to="/contacto"
               className="rounded-full bg-navy px-5 py-2.5 font-semibold text-white transition hover:bg-navy-700"
@@ -156,6 +164,15 @@ export default function Navbar() {
                 {l.label}
               </Link>
             ))}
+            <a
+              href="https://proyecto-crm-abogados.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className="mt-3 block rounded-full border border-navy/25 px-5 py-3 text-center font-semibold text-navy"
+            >
+              Acceso a la plataforma
+            </a>
             <Link
               to="/contacto"
               onClick={() => setOpen(false)}
