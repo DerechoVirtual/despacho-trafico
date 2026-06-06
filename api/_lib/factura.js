@@ -1,16 +1,13 @@
-// Genera el HTML de una factura bonita con Gemini 3.5 Flash (modo rápido,
-// thinkingBudget:0). Si Gemini falla, usa una plantilla de respaldo equivalente
-// para que SIEMPRE se emita factura.
+// Genera la factura en PDF (maquetado perfecto con pdf-lib). El texto de la
+// factura (descripción del concepto y nota de cortesía) lo redacta Gemini 3.5
+// Flash; si Gemini falla, se usan textos por defecto. El PDF SIEMPRE se genera.
 //
 // Variable de entorno: GEMINI_API_KEY
 
-const MODEL = "gemini-3.5-flash";
-const esc = (s = "") =>
-  String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const eur = (c) =>
-  (c / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
-// Datos fijos del emisor.
+const MODEL = "gemini-3.5-flash";
+
 export const EMISOR = {
   nombre: "Rivero Abogados",
   letrado: "Carlos Rivero García",
@@ -20,123 +17,197 @@ export const EMISOR = {
   email: "carlosrivero@derechovirtual.org",
 };
 
+const NAVY = rgb(0.059, 0.173, 0.302);
+const GOLD = rgb(0.784, 0.643, 0.361);
+const CREAM = rgb(0.965, 0.937, 0.886);
+const GRAY = rgb(0.39, 0.45, 0.51);
+const DARK = rgb(0.11, 0.15, 0.2);
+const LINE = rgb(0.88, 0.9, 0.93);
+
 export function calcularImportes(baseCents, ivaPct = 21) {
   const ivaCents = Math.round(baseCents * (ivaPct / 100));
   return { baseCents, ivaCents, totalCents: baseCents + ivaCents, ivaPct };
 }
 
-function plantillaRespaldo(d) {
-  const { baseCents, ivaCents, totalCents, ivaPct } = d.importes;
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"></head>
-<body style="margin:0;background:#f4f6f9;font-family:Arial,Helvetica,sans-serif;color:#1d2733">
-<div style="max-width:640px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e7ebf0">
-  <div style="background:#0f2c4d;padding:28px 32px;display:flex;justify-content:space-between;align-items:flex-start">
-    <div>
-      <div style="color:#fff;font-size:20px;font-weight:bold">${esc(EMISOR.nombre)}</div>
-      <div style="color:#c8a45c;font-size:13px;margin-top:4px">${esc(EMISOR.letrado)} · ${esc(EMISOR.colegiacion)}</div>
-    </div>
-    <div style="text-align:right;color:#cdd8e6;font-size:12px">
-      <div style="color:#fff;font-size:15px;font-weight:bold;letter-spacing:1px">FACTURA</div>
-      <div style="margin-top:6px">Nº ${esc(d.numero)}</div>
-      <div>${esc(d.fecha)}</div>
-    </div>
-  </div>
-  <div style="padding:24px 32px">
-    <table style="width:100%;font-size:13px;color:#64748b"><tr>
-      <td style="vertical-align:top;width:50%">
-        <div style="text-transform:uppercase;letter-spacing:.5px;font-size:11px;color:#94a3b8">Emisor</div>
-        <div style="color:#1d2733;margin-top:4px">${esc(EMISOR.nombre)}<br>NIF ${esc(EMISOR.nif)}<br>${esc(EMISOR.domicilio)}<br>${esc(EMISOR.email)}</div>
-      </td>
-      <td style="vertical-align:top">
-        <div style="text-transform:uppercase;letter-spacing:.5px;font-size:11px;color:#94a3b8">Cliente</div>
-        <div style="color:#1d2733;margin-top:4px">${esc(d.cliente.nombre)}${d.cliente.dni ? "<br>DNI/NIE " + esc(d.cliente.dni) : ""}${d.cliente.direccion ? "<br>" + esc(d.cliente.direccion) : ""}${d.cliente.cp || d.cliente.ciudad ? "<br>" + esc([d.cliente.cp, d.cliente.ciudad].filter(Boolean).join(" ")) : ""}<br>${esc(d.cliente.email)}</div>
-      </td>
-    </tr></table>
+const eur = (c) =>
+  (c / 100).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
-    <table style="width:100%;border-collapse:collapse;margin-top:24px;font-size:14px">
-      <thead><tr style="background:#f6efe2">
-        <th style="text-align:left;padding:12px;color:#0f2c4d">Concepto</th>
-        <th style="text-align:right;padding:12px;color:#0f2c4d;width:120px">Importe</th>
-      </tr></thead>
-      <tbody><tr>
-        <td style="padding:12px;border-bottom:1px solid #eef1f5">${esc(d.concepto)}<div style="color:#94a3b8;font-size:12px;margin-top:2px">Honorarios profesionales (cuota fija)</div></td>
-        <td style="padding:12px;border-bottom:1px solid #eef1f5;text-align:right">${eur(baseCents)}</td>
-      </tr></tbody>
-    </table>
-
-    <table style="width:100%;max-width:260px;margin-left:auto;margin-top:16px;font-size:14px">
-      <tr><td style="padding:4px 0;color:#64748b">Base imponible</td><td style="padding:4px 0;text-align:right">${eur(baseCents)}</td></tr>
-      <tr><td style="padding:4px 0;color:#64748b">IVA (${ivaPct}%)</td><td style="padding:4px 0;text-align:right">${eur(ivaCents)}</td></tr>
-      <tr><td style="padding:10px 0;border-top:2px solid #0f2c4d;font-weight:bold;color:#0f2c4d">TOTAL</td><td style="padding:10px 0;border-top:2px solid #0f2c4d;text-align:right;font-weight:bold;color:#0f2c4d">${eur(totalCents)}</td></tr>
-    </table>
-
-    <p style="margin-top:24px;font-size:12px;color:#94a3b8;line-height:1.6">Factura pagada mediante tarjeta a través de Stripe. Gracias por confiar en ${esc(EMISOR.nombre)}.${d.pie ? " " + esc(d.pie) : ""}</p>
-  </div>
-</div></body></html>`;
+// Deja el texto en caracteres que las fuentes estándar (WinAnsi) pueden dibujar.
+function wansi(s = "") {
+  return String(s)
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-")
+    .replace(/…/g, "...")
+    .replace(/[^\x00-\xFF€]/g, "");
 }
 
-function limpiar(html) {
-  return html
-    .replace(/^```(?:html)?\s*/i, "")
-    .replace(/```\s*$/i, "")
-    .trim();
-}
-
-// Devuelve { html, fuente: "gemini"|"respaldo" }
-export async function generarFacturaHTML(datos) {
-  const d = { ...datos, importes: calcularImportes(datos.baseCents, datos.ivaPct ?? 21) };
+// --- Gemini: textos de la factura -----------------------------------------
+async function textosFactura(concepto) {
+  const fallback = {
+    descripcion: "Honorarios profesionales por la prestación del servicio jurídico contratado.",
+    nota: `Factura pagada mediante tarjeta a través de Stripe. Gracias por confiar en ${EMISOR.nombre}.`,
+    fuente: "respaldo",
+  };
   const key = process.env.GEMINI_API_KEY;
-  const respaldo = plantillaRespaldo(d);
-  if (!key) return { html: respaldo, fuente: "respaldo" };
+  if (!key) return fallback;
 
-  const { baseCents, ivaCents, totalCents, ivaPct } = d.importes;
-  const prompt = `Eres un diseñador de facturas. Genera el código HTML COMPLETO de una factura profesional, elegante y lista para enviar por email (HTML + CSS en línea, sin JavaScript, compatible con clientes de correo, ancho máx 640px, apta para imprimir en A4).
-
-Paleta de marca del despacho: azul marino #0f2c4d, dorado #c8a45c, fondo crema #f6efe2, texto #1d2733, gris #64748b. Tipografía Arial/Helvetica. Diseño limpio, con cabecera de marca, datos de emisor y cliente en dos columnas, una tabla de conceptos, un bloque de totales alineado a la derecha y un pie discreto.
-
-DATOS DE LA FACTURA (úsalos EXACTAMENTE, no inventes otros importes ni datos):
-- Emisor: ${EMISOR.nombre} — ${EMISOR.letrado} (${EMISOR.colegiacion}). NIF ${EMISOR.nif}. ${EMISOR.domicilio}. ${EMISOR.email}
-- Nº de factura: ${d.numero}
-- Fecha: ${d.fecha}
-- Cliente: ${d.cliente.nombre}${d.cliente.dni ? " · DNI/NIE " + d.cliente.dni : ""}${d.cliente.direccion ? " · " + d.cliente.direccion : ""}${d.cliente.cp || d.cliente.ciudad ? " · " + [d.cliente.cp, d.cliente.ciudad].filter(Boolean).join(" ") : ""} · ${d.cliente.email}
-- Concepto (una sola línea): "${d.concepto}" — Honorarios profesionales (cuota fija)
-- Base imponible: ${eur(baseCents)}
-- IVA (${ivaPct}%): ${eur(ivaCents)}
-- TOTAL: ${eur(totalCents)}
-- Nota de pie: "Factura pagada mediante tarjeta a través de Stripe. Gracias por confiar en ${EMISOR.nombre}."
-
-Usa el formato de moneda en euros con el símbolo € y coma decimal (formato español), exactamente como te los doy.
-Devuelve ÚNICAMENTE el HTML, empezando por <!DOCTYPE html>. No añadas explicaciones ni marques bloques de código.`;
-
+  const prompt = `Eres el sistema de facturación del despacho ${EMISOR.nombre} (abogacía de tráfico en España). Para una factura del servicio "${concepto}", redacta en español (tono profesional y cercano, sin tecnicismos innecesarios):
+- "descripcion": UNA frase (máx 18 palabras) que describa el concepto facturado de forma elegante para la línea de la factura.
+- "nota": UNA o dos frases de cortesía para el pie de la factura, agradeciendo la confianza e indicando que el pago se ha realizado con tarjeta mediante Stripe.
+Devuelve solo JSON.`;
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.4,
-      maxOutputTokens: 4096,
-      thinkingConfig: { thinkingBudget: 0 }, // rápido, sin razonamiento
+      temperature: 0.5,
+      maxOutputTokens: 512,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "object",
+        properties: { descripcion: { type: "string" }, nota: { type: "string" } },
+        required: ["descripcion", "nota"],
+      },
+      thinkingConfig: { thinkingBudget: 0 },
     },
   };
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
   try {
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+    );
     if (!r.ok) {
-      console.error("Gemini factura error", r.status, (await r.text()).slice(0, 300));
-      return { html: respaldo, fuente: "respaldo" };
+      console.error("Gemini factura txt", r.status, (await r.text()).slice(0, 200));
+      return fallback;
     }
     const j = await r.json();
-    const text =
-      j.candidates?.[0]?.content?.parts?.map((p) => p.text).filter(Boolean).join("") || "";
-    const html = limpiar(text);
-    if (!/<.*html|<body|<div/i.test(html) || html.length < 200) {
-      return { html: respaldo, fuente: "respaldo" };
-    }
-    return { html, fuente: "gemini" };
-  } catch (err) {
-    console.error("Fallo generarFacturaHTML:", err.message);
-    return { html: respaldo, fuente: "respaldo" };
+    const text = j.candidates?.[0]?.content?.parts?.map((p) => p.text).filter(Boolean).join("") || "";
+    const o = JSON.parse(text);
+    if (!o.descripcion || !o.nota) return fallback;
+    return { descripcion: o.descripcion, nota: o.nota, fuente: "gemini" };
+  } catch (e) {
+    console.error("textosFactura:", e.message);
+    return fallback;
   }
+}
+
+// Parte un texto en líneas que caben en maxWidth.
+function wrap(text, font, size, maxWidth) {
+  const palabras = wansi(text).split(/\s+/);
+  const lineas = [];
+  let actual = "";
+  for (const p of palabras) {
+    const prueba = actual ? `${actual} ${p}` : p;
+    if (font.widthOfTextAtSize(prueba, size) > maxWidth && actual) {
+      lineas.push(actual);
+      actual = p;
+    } else {
+      actual = prueba;
+    }
+  }
+  if (actual) lineas.push(actual);
+  return lineas;
+}
+
+// --- PDF -------------------------------------------------------------------
+// Devuelve { bytes: Uint8Array, fuente: "gemini"|"respaldo" }
+export async function generarFacturaPDF(datos) {
+  const { numero, fecha, concepto, cliente } = datos;
+  const importes = calcularImportes(datos.baseCents, datos.ivaPct ?? 21);
+  const { baseCents, ivaCents, totalCents, ivaPct } = importes;
+  const { descripcion, nota, fuente } = await textosFactura(concepto);
+
+  const doc = await PDFDocument.create();
+  doc.setTitle(`Factura ${numero} - ${EMISOR.nombre}`);
+  doc.setAuthor(EMISOR.nombre);
+  const page = doc.addPage([595.28, 841.89]); // A4
+  const W = 595.28;
+  const H = 841.89;
+  const M = 50;
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+
+  const text = (s, x, y, size, f = font, color = DARK) =>
+    page.drawText(wansi(s), { x, y, size, font: f, color });
+  const right = (s, xRight, y, size, f = font, color = DARK) => {
+    const t = wansi(s);
+    page.drawText(t, { x: xRight - f.widthOfTextAtSize(t, size), y, size, font: f, color });
+  };
+
+  // Cabecera
+  page.drawRectangle({ x: 0, y: H - 120, width: W, height: 120, color: NAVY });
+  text(EMISOR.nombre.toUpperCase(), M, H - 58, 22, bold, rgb(1, 1, 1));
+  text(`${EMISOR.letrado}  ·  ${EMISOR.colegiacion}`, M, H - 80, 10, font, GOLD);
+  right("FACTURA", W - M, H - 50, 16, bold, rgb(1, 1, 1));
+  right(`Nº ${numero}`, W - M, H - 72, 10, font, rgb(0.85, 0.89, 0.94));
+  right(fecha, W - M, H - 88, 10, font, rgb(0.85, 0.89, 0.94));
+
+  // Emisor / Cliente
+  let y = H - 160;
+  text("EMISOR", M, y, 9, bold, GRAY);
+  text("FACTURAR A", W / 2 + 10, y, 9, bold, GRAY);
+  y -= 16;
+  const emisorLineas = [EMISOR.nombre, `NIF ${EMISOR.nif}`, EMISOR.domicilio, EMISOR.email];
+  const clienteLineas = [
+    cliente.nombre,
+    cliente.dni ? `DNI/NIE ${cliente.dni}` : null,
+    cliente.direccion || null,
+    [cliente.cp, cliente.ciudad].filter(Boolean).join(" ") || null,
+    cliente.email,
+  ].filter(Boolean);
+  const filas = Math.max(emisorLineas.length, clienteLineas.length);
+  for (let i = 0; i < filas; i++) {
+    if (emisorLineas[i]) text(emisorLineas[i], M, y - i * 14, 10, font, DARK);
+    if (clienteLineas[i]) text(clienteLineas[i], W / 2 + 10, y - i * 14, 10, font, DARK);
+  }
+  y = y - filas * 14 - 30;
+
+  // Tabla de conceptos
+  page.drawRectangle({ x: M, y: y - 6, width: W - 2 * M, height: 26, color: CREAM });
+  text("CONCEPTO", M + 12, y + 2, 10, bold, NAVY);
+  right("IMPORTE", W - M - 12, y + 2, 10, bold, NAVY);
+  y -= 24;
+
+  text(concepto, M + 12, y - 6, 12, bold, DARK);
+  const descLineas = wrap(descripcion, font, 9, W - 2 * M - 150);
+  let yy = y - 22;
+  for (const l of descLineas) {
+    text(l, M + 12, yy, 9, font, GRAY);
+    yy -= 12;
+  }
+  right(eur(baseCents), W - M - 12, y - 6, 12, font, DARK);
+  const filaBottom = Math.min(yy, y - 30);
+  page.drawLine({
+    start: { x: M, y: filaBottom },
+    end: { x: W - M, y: filaBottom },
+    thickness: 1,
+    color: LINE,
+  });
+
+  // Totales
+  let ty = filaBottom - 26;
+  const xLbl = W - M - 220;
+  const xVal = W - M;
+  text("Base imponible", xLbl, ty, 11, font, GRAY);
+  right(eur(baseCents), xVal, ty, 11, font, DARK);
+  ty -= 18;
+  text(`IVA (${ivaPct}%)`, xLbl, ty, 11, font, GRAY);
+  right(eur(ivaCents), xVal, ty, 11, font, DARK);
+  ty -= 10;
+  page.drawLine({ start: { x: xLbl, y: ty }, end: { x: xVal, y: ty }, thickness: 1.5, color: NAVY });
+  ty -= 22;
+  text("TOTAL", xLbl, ty, 13, bold, NAVY);
+  right(eur(totalCents), xVal, ty, 13, bold, NAVY);
+
+  // Nota de pie
+  const notaLineas = wrap(nota, font, 10, W - 2 * M);
+  let ny = 110;
+  page.drawLine({ start: { x: M, y: ny + 18 }, end: { x: W - M, y: ny + 18 }, thickness: 1, color: LINE });
+  for (const l of notaLineas) {
+    text(l, M, ny, 10, font, GRAY);
+    ny -= 14;
+  }
+  text(`${EMISOR.nombre} · ${EMISOR.letrado} · ${EMISOR.colegiacion}`, M, 50, 9, font, GRAY);
+
+  const bytes = await doc.save();
+  return { bytes, fuente };
 }

@@ -90,3 +90,50 @@ export async function reemplazarDocumentos(clienteId, claves) {
 export async function crearNotificacion(clienteId, titulo, mensaje, canales = ["plataforma", "email"]) {
   return rest("notificaciones", "POST", [{ cliente_id: clienteId, titulo, mensaje, canales }], "return=minimal");
 }
+
+// --- Storage ---------------------------------------------------------------
+export async function crearBucketSiNoExiste(bucket, isPublic = false) {
+  const { url } = cfg();
+  const r = await fetch(`${url}/storage/v1/bucket`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ id: bucket, name: bucket, public: isPublic }),
+  });
+  // 200 creado, 409/400 "already exists" -> ok
+  if (!r.ok) {
+    const t = await r.text();
+    if (!/exist|already|duplicate/i.test(t)) console.error("crearBucket:", r.status, t.slice(0, 150));
+  }
+  return true;
+}
+
+// Sube bytes (Uint8Array/Buffer) a {bucket}/{path}. Sobrescribe si existe.
+export async function subirArchivo(bucket, path, bytes, contentType) {
+  const { url, key } = cfg();
+  const r = await fetch(`${url}/storage/v1/object/${bucket}/${encodeURI(path)}`, {
+    method: "POST",
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": contentType,
+      "x-upsert": "true",
+      "cache-control": "3600",
+    },
+    body: Buffer.from(bytes),
+  });
+  if (!r.ok) throw new Error(`subirArchivo ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  return true;
+}
+
+// Devuelve una URL firmada (descarga) válida `expiresIn` segundos.
+export async function urlFirmada(bucket, path, expiresIn = 31536000) {
+  const { url } = cfg();
+  const r = await fetch(`${url}/storage/v1/object/sign/${bucket}/${encodeURI(path)}`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ expiresIn }),
+  });
+  if (!r.ok) throw new Error(`urlFirmada ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  const j = await r.json();
+  return `${url}/storage/v1${j.signedURL || j.signedUrl}`;
+}

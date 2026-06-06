@@ -10,13 +10,16 @@
 import crypto from "node:crypto";
 import { getServicio, DOC_TITULOS, MODO_TEST } from "./_lib/servicios.js";
 import { enviarEmail, esc } from "./_lib/gmail.js";
-import { generarFacturaHTML, calcularImportes } from "./_lib/factura.js";
+import { generarFacturaPDF, calcularImportes } from "./_lib/factura.js";
 import {
   crearUsuario,
   actualizarPerfil,
   reemplazarExpediente,
   reemplazarDocumentos,
   crearNotificacion,
+  crearBucketSiNoExiste,
+  subirArchivo,
+  urlFirmada,
 } from "./_lib/supabase.js";
 
 // Necesitamos el cuerpo SIN parsear para validar la firma de Stripe.
@@ -179,8 +182,8 @@ export default async function handler(req, res) {
       `Hemos abierto tu expediente para tu ${servicio.nombre}. El siguiente paso es subir la documentación pendiente desde "Mi documentación".`
     );
 
-    // 3) Factura (generada con Gemini 3.5 Flash) -> email + adjunto
-    const { html: facturaHtml, fuente } = await generarFacturaHTML({
+    // 3) Factura en PDF (texto por Gemini 3.5 Flash, maquetado con pdf-lib)
+    const { bytes: pdfBytes, fuente } = await generarFacturaPDF({
       numero: numeroFactura,
       fecha: fechaFactura,
       concepto: servicio.nombre,
@@ -194,26 +197,53 @@ export default async function handler(req, res) {
         ciudad: cd.address?.city || null,
       },
     });
-    console.log("Factura generada por:", fuente, numeroFactura);
+    console.log("Factura PDF generada (texto:", fuente + "):", numeroFactura, pdfBytes.length, "bytes");
 
-    const introFactura = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:640px;margin:0 auto 16px;color:#1d2733">
-      <p style="font-size:15px;line-height:1.6">Hola ${esc(nombre)}, hemos recibido tu pago correctamente. Adjuntamos tu <strong>factura</strong> por la contratación de <strong>${esc(servicio.nombre)}</strong>. También puedes verla aquí abajo. En un correo aparte te damos acceso a tu plataforma.</p>
+    // Guardar el PDF en Supabase Storage y obtener enlace de descarga firmado.
+    const facturaPath = `${id}/factura-${numeroFactura}.pdf`;
+    let enlaceFactura = null;
+    try {
+      await crearBucketSiNoExiste("facturas", false);
+      await subirArchivo("facturas", facturaPath, pdfBytes, "application/pdf");
+      enlaceFactura = await urlFirmada("facturas", facturaPath, 31536000); // 1 año
+    } catch (e) {
+      console.error("Storage factura:", e.message);
+    }
+
+    const introFactura = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#1d2733">
+      <div style="background:#0f2c4d;padding:24px;border-radius:12px 12px 0 0">
+        <h1 style="color:#fff;margin:0;font-size:20px">Pago confirmado ✔ · Tu factura</h1>
+        <p style="color:#c8a45c;margin:6px 0 0;font-size:13px">Rivero Abogados · ${esc(numeroFactura)}</p>
+      </div>
+      <div style="border:1px solid #eee;border-top:0;border-radius:0 0 12px 12px;padding:24px">
+        <p style="font-size:15px;line-height:1.6">Hola ${esc(nombre)}, hemos recibido tu pago correctamente. Adjuntamos tu <strong>factura en PDF</strong> por la contratación de <strong>${esc(servicio.nombre)}</strong> (total ${esc(totalReal)}, IVA incluido).</p>
+        ${enlaceFactura ? `<p style="text-align:center;margin:22px 0"><a href="${esc(enlaceFactura)}" style="display:inline-block;background:#c8a45c;color:#0f2c4d;font-weight:bold;text-decoration:none;padding:12px 26px;border-radius:999px">Descargar factura (PDF)</a></p>` : ""}
+        <p style="font-size:14px;line-height:1.6;color:#64748b">En un correo aparte te damos acceso a tu plataforma para subir la documentación. Si tienes cualquier duda, responde a este email.</p>
+      </div>
     </div>`;
 
     await enviarEmail({
       to: email,
       subject: `Tu factura ${numeroFactura} · ${servicio.nombre} · Rivero Abogados`,
-      html: introFactura + facturaHtml,
-      text: `Hola ${nombre},\n\nHemos recibido tu pago. Adjuntamos tu factura ${numeroFactura} por "${servicio.nombre}".\nBase: ${eur(importes.baseCents)} · IVA 21%: ${eur(importes.ivaCents)} · TOTAL: ${totalReal}\n\nEn un correo aparte te enviamos el acceso a tu plataforma.\n\nRivero Abogados`,
+      html: introFactura,
+      text: `Hola ${nombre},\n\nHemos recibido tu pago. Adjuntamos tu factura ${numeroFactura} en PDF por "${servicio.nombre}".\nBase: ${eur(importes.baseCents)} · IVA 21%: ${eur(importes.ivaCents)} · TOTAL: ${totalReal}\n${enlaceFactura ? `\nDescarga: ${enlaceFactura}\n` : ""}\nEn un correo aparte te enviamos el acceso a tu plataforma.\n\nRivero Abogados`,
       replyTo: process.env.NOTIFY_EMAIL,
       attachments: [
         {
-          filename: `factura-${numeroFactura}.html`,
-          mimeType: "text/html",
-          contentBase64: Buffer.from(facturaHtml, "utf-8").toString("base64"),
+          filename: `factura-${numeroFactura}.pdf`,
+          mimeType: "application/pdf",
+          contentBase64: Buffer.from(pdfBytes).toString("base64"),
         },
       ],
     });
+
+    if (enlaceFactura) {
+      await crearNotificacion(
+        id,
+        `Factura ${numeroFactura} disponible`,
+        `Tu factura por ${servicio.nombre} (${totalReal}) está disponible. Puedes descargarla aquí: ${enlaceFactura}`
+      ).catch((e) => console.error("notif factura:", e.message));
+    }
 
     const bienv = emailBienvenida({
       nombre,
