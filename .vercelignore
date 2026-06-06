@@ -1,10 +1,7 @@
-node_modules
-.git
 .env
 .env.*
 _imggen
 _static_anterior
-imagenes
-dist
-CLAUDE.md
+/imagenes
 .claude
+CLAUDE.md
