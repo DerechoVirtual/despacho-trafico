@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { servicios } from "../data/servicios.js";
 import ServiceIcon from "../components/ServiceIcon.jsx";
 import PageHero from "../components/PageHero.jsx";
+import BotonPago from "../components/BotonPago.jsx";
 import { useSeo } from "../lib/seo.js";
 
 export default function Servicios() {
@@ -85,6 +86,9 @@ export default function Servicios() {
                   <th className="px-6 py-4 text-right text-sm font-semibold">
                     Cuota fija
                   </th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold">
+                    Contratar
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -101,8 +105,30 @@ export default function Servicios() {
                         {s.titulo}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-right font-semibold text-gold-dark">
+                    <td className="px-6 py-4 text-right font-semibold text-gold-dark whitespace-nowrap">
                       {s.precio}
+                      {s.comprable && (
+                        <span className="block text-xs font-normal text-slate-400">
+                          + IVA
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {s.comprable ? (
+                        <BotonPago
+                          slug={s.slug}
+                          className="inline-flex items-center justify-center rounded-full bg-gold px-5 py-2 text-sm font-semibold text-navy-900 shadow shadow-gold/40 transition hover:bg-gold-dark"
+                        >
+                          Pagar
+                        </BotonPago>
+                      ) : (
+                        <Link
+                          to="/contacto"
+                          className="inline-flex items-center justify-center rounded-full border border-navy/15 px-5 py-2 text-sm font-semibold text-navy transition hover:bg-navy/5"
+                        >
+                          Consúltanos
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}

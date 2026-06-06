@@ -8,6 +8,7 @@ import ServicioDetalle from "./pages/ServicioDetalle.jsx";
 import SobreMi from "./pages/SobreMi.jsx";
 import Opiniones from "./pages/Opiniones.jsx";
 import Contacto from "./pages/Contacto.jsx";
+import PagoConfirmado from "./pages/PagoConfirmado.jsx";
 import AvisoLegal from "./pages/AvisoLegal.jsx";
 import Privacidad from "./pages/Privacidad.jsx";
 import Cookies from "./pages/Cookies.jsx";
@@ -25,6 +26,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/sobre-mi" element={<SobreMi />} />
           <Route path="/opiniones" element={<Opiniones />} />
           <Route path="/contacto" element={<Contacto />} />
+          <Route path="/pago-confirmado" element={<PagoConfirmado />} />
         </Route>
         <Route path="/anti-multaitor" element={<AntiMultaitor />} />
         <Route path="/aviso-legal" element={<AvisoLegal />} />

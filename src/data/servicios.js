@@ -7,6 +7,7 @@ export const servicios = [
     titulo: "Alegaciones a la denuncia",
     cardTitulo: "Alegaciones a la denuncia",
     precio: "150 €",
+    comprable: true,
     imagen: "/imagenes/alegaciones.jpg",
     eyebrow: "Primera línea de defensa",
     resumen:
@@ -34,6 +35,7 @@ export const servicios = [
     titulo: "Identificación del conductor",
     cardTitulo: "Identificación del conductor",
     precio: "200 €",
+    comprable: true,
     imagen: "/imagenes/identificacion.jpg",
     eyebrow: "Un error aquí se paga caro",
     resumen:
@@ -60,6 +62,7 @@ export const servicios = [
     titulo: "Recurso de reposición",
     cardTitulo: "Recurso de reposición",
     precio: "250 €",
+    comprable: true,
     imagen: "/imagenes/recurso.jpg",
     eyebrow: "La pelea no ha terminado",
     resumen:
@@ -87,6 +90,7 @@ export const servicios = [
     titulo: "Oposición a la providencia de apremio",
     cardTitulo: "Oposición al apremio",
     precio: "300 €",
+    comprable: true,
     imagen: "/imagenes/apremio.jpg",
     eyebrow: "Frena el embargo",
     resumen:
@@ -114,6 +118,7 @@ export const servicios = [
     titulo: "Defensa penal de tráfico",
     cardTitulo: "Defensa penal de tráfico",
     precio: "1.200 €",
+    comprable: true,
     imagen: "/imagenes/alcoholemia.jpg",
     eyebrow: "Aquí te juegas mucho",
     destacado: true,

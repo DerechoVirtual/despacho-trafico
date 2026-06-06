@@ -2,6 +2,7 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { servicios, getServicio } from "../data/servicios.js";
 import ServiceIcon from "../components/ServiceIcon.jsx";
 import PageHero from "../components/PageHero.jsx";
+import BotonPago from "../components/BotonPago.jsx";
 import { useSeo } from "../lib/seo.js";
 
 function Check() {
@@ -65,12 +66,26 @@ export default function ServicioDetalle() {
               </p>
             </div>
           </div>
-          <Link
-            to="/contacto"
-            className="inline-flex items-center justify-center rounded-full bg-gold px-7 py-3 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
-          >
-            Consulta gratis sobre este servicio
-          </Link>
+          <div className="flex flex-col items-center gap-3 sm:flex-row">
+            {s.comprable && (
+              <BotonPago
+                slug={s.slug}
+                className="inline-flex items-center justify-center rounded-full bg-gold px-7 py-3 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
+              >
+                Contratar y pagar online · {s.precio}
+              </BotonPago>
+            )}
+            <Link
+              to="/contacto"
+              className={
+                s.comprable
+                  ? "inline-flex items-center justify-center rounded-full border-2 border-navy/15 px-7 py-3 font-semibold text-navy transition hover:border-navy/30 hover:bg-navy/5"
+                  : "inline-flex items-center justify-center rounded-full bg-gold px-7 py-3 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
+              }
+            >
+              Consulta gratis sobre este servicio
+            </Link>
+          </div>
         </div>
       </section>
 
