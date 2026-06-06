@@ -11,7 +11,7 @@ import crypto from "node:crypto";
 import { getServicio, DOC_TITULOS, MODO_TEST } from "./_lib/servicios.js";
 import { enviarEmail, esc } from "./_lib/gmail.js";
 import { generarFacturaPDF, calcularImportes } from "./_lib/factura.js";
-import { subirFacturaADrive, CARPETA_FACTURAS } from "./_lib/drive.js";
+import { subirFacturaADrive, registrarFacturaEnExcel } from "./_lib/drive.js";
 import {
   crearUsuario,
   actualizarPerfil,
@@ -317,23 +317,45 @@ export default async function handler(req, res) {
       console.error("Storage factura:", e.message);
     }
 
-    // Guardar TAMBIÉN una copia de la factura en Google Drive (carpeta
-    // Facturación / Despacho de tráfico). Best-effort: si fallara, no rompemos la venta.
+    // Guardar TAMBIÉN la factura en Google Drive, ordenada por MES, y anotarla en el
+    // Excel del TRIMESTRE. Best-effort: si fallara, no rompemos la venta.
     const driveRes = await subirFacturaADrive({
       filename: `factura-${numeroFactura}.pdf`,
       bytes: pdfBytes,
+      fecha: ahora,
     });
     if (driveRes.ok) {
-      console.log(
-        "Factura en Google Drive:",
-        numeroFactura,
-        "→",
-        CARPETA_FACTURAS.join(" / "),
-        driveRes.webViewLink || driveRes.id,
-        driveRes.yaExistia ? "(ya existía)" : "(subida)"
-      );
+      console.log("Factura PDF en Drive:", numeroFactura, "→", driveRes.carpeta,
+        driveRes.webViewLink || driveRes.id, driveRes.yaExistia ? "(ya existía)" : "(subida)");
     } else {
-      console.error("Drive factura:", driveRes.error);
+      console.error("Drive factura PDF:", driveRes.error);
+    }
+
+    const excelRes = await registrarFacturaEnExcel({
+      fecha: ahora,
+      claveUnica: numeroFactura,
+      encabezados: [
+        "Nº factura", "Fecha", "Cliente", "DNI/NIF", "Servicio",
+        "Base (€)", "IVA (€)", "Total (€)", "Estado", "Método de pago", "Enlace PDF",
+      ],
+      fila: [
+        numeroFactura,
+        fechaFactura,
+        nombre,
+        dni || "",
+        servicio.nombre,
+        +(importes.baseCents / 100).toFixed(2),
+        +(importes.ivaCents / 100).toFixed(2),
+        +(importes.totalCents / 100).toFixed(2),
+        "Pagada",
+        "Tarjeta · Stripe",
+        driveRes.webViewLink || enlaceFactura || "",
+      ],
+    });
+    if (excelRes.ok) {
+      console.log("Factura anotada en Excel:", excelRes.hoja, excelRes.yaEstaba ? "(ya estaba)" : "(añadida)");
+    } else {
+      console.error("Drive factura Excel:", excelRes.error);
     }
 
     // Registrar la VENTA en el CRM (tabla facturas) para "Ventas y evolución".
@@ -415,21 +437,29 @@ export default async function handler(req, res) {
 
     // 4) Aviso interno al despacho
     if (process.env.NOTIFY_EMAIL) {
-      const carpetaDrive = CARPETA_FACTURAS.join(" / ");
-      // Constancia clara y visible de si la factura quedó guardada en Google Drive.
+      // Constancia clara y visible de si la factura quedó guardada en Google Drive
+      // (PDF por mes) y anotada en el Excel del trimestre.
+      const excelLinea = excelRes.ok
+        ? `<p style="margin:6px 0 0;font-size:13px;color:#137333">Excel del trimestre: <strong>${esc(excelRes.hoja)}</strong>${excelRes.yaEstaba ? " (ya estaba anotada)" : " — fila añadida"}${excelRes.webViewLink ? ` · <a href="${esc(excelRes.webViewLink)}" style="color:#0b5394;font-weight:bold">abrir Excel →</a>` : ""}</p>`
+        : `<p style="margin:6px 0 0;font-size:13px;color:#c5221f">⚠ No se pudo anotar en el Excel del trimestre (${esc(excelRes.error || "error")}).</p>`;
       const driveHtml = driveRes.ok
         ? `<div style="margin:16px 0;padding:14px 16px;border-radius:10px;background:#e7f6ec;border:1px solid #adddc0">
             <p style="margin:0;font-size:15px;color:#137333"><strong>✔ Factura guardada en Google Drive</strong></p>
-            <p style="margin:6px 0 0;font-size:13px;color:#137333">Carpeta: <strong>${esc(carpetaDrive)}</strong>${driveRes.yaExistia ? " (ya estaba guardada)" : ""}</p>
-            ${driveRes.webViewLink ? `<p style="margin:8px 0 0"><a href="${esc(driveRes.webViewLink)}" style="color:#0b5394;font-weight:bold">Abrir factura en Google Drive →</a></p>` : ""}
+            <p style="margin:6px 0 0;font-size:13px;color:#137333">Carpeta (por mes): <strong>${esc(driveRes.carpeta)}</strong>${driveRes.yaExistia ? " (ya estaba guardada)" : ""}</p>
+            ${driveRes.webViewLink ? `<p style="margin:6px 0 0"><a href="${esc(driveRes.webViewLink)}" style="color:#0b5394;font-weight:bold">Abrir factura (PDF) en Google Drive →</a></p>` : ""}
+            ${excelLinea}
           </div>`
         : `<div style="margin:16px 0;padding:14px 16px;border-radius:10px;background:#fce8e6;border:1px solid #f5b5af">
             <p style="margin:0;font-size:15px;color:#c5221f"><strong>⚠ La factura NO se pudo guardar en Google Drive</strong></p>
             <p style="margin:6px 0 0;font-size:13px;color:#c5221f">Motivo: ${esc(driveRes.error || "desconocido")}. (El cliente sí tiene su PDF por email y en la plataforma.)</p>
+            ${excelLinea}
           </div>`;
-      const driveTxt = driveRes.ok
-        ? `Google Drive: GUARDADA en "${carpetaDrive}"${driveRes.yaExistia ? " (ya estaba)" : ""}${driveRes.webViewLink ? ` -> ${driveRes.webViewLink}` : ""}`
-        : `Google Drive: NO guardada (${driveRes.error || "error"})`;
+      const driveTxt = (driveRes.ok
+        ? `Google Drive (PDF por mes): GUARDADA en "${driveRes.carpeta}"${driveRes.yaExistia ? " (ya estaba)" : ""}${driveRes.webViewLink ? ` -> ${driveRes.webViewLink}` : ""}`
+        : `Google Drive: NO guardada (${driveRes.error || "error"})`) +
+        (excelRes.ok
+          ? `\nExcel trimestre: ${excelRes.hoja}${excelRes.yaEstaba ? " (ya estaba)" : " (fila añadida)"}`
+          : `\nExcel trimestre: NO anotada (${excelRes.error || "error"})`);
 
       await enviarEmail({
         to: process.env.NOTIFY_EMAIL,
