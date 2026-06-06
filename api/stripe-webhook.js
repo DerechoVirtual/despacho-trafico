@@ -257,7 +257,9 @@ export default async function handler(req, res) {
       await crearNotificacion(
         id,
         `Factura ${numeroFactura} disponible`,
-        `Tu factura por ${servicio.nombre} (${totalReal}) está disponible. Puedes descargarla aquí: ${enlaceFactura}`
+        `Tu factura por ${servicio.nombre} (${totalReal}, IVA incluido) ya está disponible.`,
+        ["plataforma", "email"],
+        enlaceFactura
       ).catch((e) => console.error("notif factura:", e.message));
     }
 

@@ -87,8 +87,8 @@ export async function reemplazarDocumentos(clienteId, claves) {
   return rest("documentos", "POST", filas, "return=minimal");
 }
 
-export async function crearNotificacion(clienteId, titulo, mensaje, canales = ["plataforma", "email"]) {
-  return rest("notificaciones", "POST", [{ cliente_id: clienteId, titulo, mensaje, canales }], "return=minimal");
+export async function crearNotificacion(clienteId, titulo, mensaje, canales = ["plataforma", "email"], enlace = null) {
+  return rest("notificaciones", "POST", [{ cliente_id: clienteId, titulo, mensaje, canales, enlace }], "return=minimal");
 }
 
 // --- Numeración correlativa de factura (RPC) -------------------------------
