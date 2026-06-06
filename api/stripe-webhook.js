@@ -11,6 +11,7 @@ import crypto from "node:crypto";
 import { getServicio, DOC_TITULOS, MODO_TEST } from "./_lib/servicios.js";
 import { enviarEmail, esc } from "./_lib/gmail.js";
 import { generarFacturaPDF, calcularImportes } from "./_lib/factura.js";
+import { subirFacturaADrive, CARPETA_FACTURAS } from "./_lib/drive.js";
 import {
   crearUsuario,
   actualizarPerfil,
@@ -21,6 +22,10 @@ import {
   subirArchivo,
   urlFirmada,
   siguienteNumFactura,
+  crearFactura,
+  buscarImpago,
+  actualizarImpago,
+  buscarPerfilIdPorEmail,
 } from "./_lib/supabase.js";
 
 // Necesitamos el cuerpo SIN parsear para validar la firma de Stripe.
@@ -99,6 +104,75 @@ function emailBienvenida({ nombre, email, password, crmUrl, servicio, docs }) {
   return { html, text };
 }
 
+// --- Impagos / pagos fallidos ----------------------------------------------
+// Extrae el email, el servicio y el importe de cualquiera de los eventos de
+// fallo y deja constancia en la tabla `facturas` (estado "fallida"), contando
+// los intentos repetidos del mismo cliente para el mismo servicio.
+async function registrarImpago(evento) {
+  const obj = evento.data.object || {};
+  let email = null, nombre = null, slug = null, amountCents = 0;
+
+  if (evento.type.startsWith("checkout.session")) {
+    const cd = obj.customer_details || {};
+    email = cd.email || null;
+    nombre = (cd.name || "").trim() || null;
+    slug = obj.metadata?.slug || null;
+    amountCents = obj.amount_total || 0;
+  } else if (evento.type === "payment_intent.payment_failed") {
+    slug = obj.metadata?.slug || null;
+    amountCents = obj.amount || 0;
+    email = obj.receipt_email ||
+      obj.last_payment_error?.payment_method?.billing_details?.email || null;
+    nombre = obj.last_payment_error?.payment_method?.billing_details?.name || null;
+  } else if (evento.type === "charge.failed") {
+    slug = obj.metadata?.slug || null;
+    amountCents = obj.amount || 0;
+    email = obj.billing_details?.email || obj.receipt_email || null;
+    nombre = obj.billing_details?.name || null;
+  }
+
+  const servicio = getServicio(slug);
+  const concepto = servicio?.nombre || "Pago de servicio (no completado)";
+  // Importe de referencia: el real del servicio si lo conocemos; si no, lo del evento.
+  const baseRef = servicio ? servicio.cents : Math.round(amountCents / 1.21) || amountCents;
+  const importes = calcularImportes(baseRef, 21);
+
+  const clienteId = email ? await buscarPerfilIdPorEmail(email).catch(() => null) : null;
+
+  // ¿Ya había un impago de este cliente para este servicio? -> sumar intento.
+  const previo = await buscarImpago(email, slug).catch(() => null);
+  if (previo) {
+    await actualizarImpago(previo.id, {
+      intentos_fallidos: (previo.intentos_fallidos || 1) + 1,
+      emitida_en: new Date().toISOString(),
+    });
+    return;
+  }
+
+  await crearFactura({
+    cliente_id: clienteId,
+    concepto,
+    slug,
+    base_cents: importes.baseCents,
+    iva_cents: importes.ivaCents,
+    total_cents: importes.totalCents,
+    iva_pct: 21,
+    estado: "fallida",
+    intentos_fallidos: 1,
+    metodo_pago: "Tarjeta - Stripe",
+    stripe_session_id: evento.type.startsWith("checkout.session") ? obj.id : null,
+    stripe_payment_intent:
+      typeof obj.payment_intent === "string"
+        ? obj.payment_intent
+        : evento.type === "payment_intent.payment_failed"
+        ? obj.id
+        : null,
+    email,
+    nombre,
+    emitida_en: new Date().toISOString(),
+  });
+}
+
 // --- Handler ---------------------------------------------------------------
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -118,6 +192,23 @@ export default async function handler(req, res) {
     evento = JSON.parse(raw.toString("utf8"));
   } catch {
     return res.status(400).json({ ok: false, error: "JSON no válido" });
+  }
+
+  // Pagos fallidos / impagos: dejamos constancia en el CRM (no bloqueamos nada).
+  const EVENTOS_FALLO = new Set([
+    "payment_intent.payment_failed",
+    "charge.failed",
+    "checkout.session.async_payment_failed",
+    "checkout.session.expired",
+  ]);
+  if (EVENTOS_FALLO.has(evento.type)) {
+    try {
+      await registrarImpago(evento);
+    } catch (e) {
+      console.error("registrarImpago:", e.message);
+    }
+    // 200 siempre: es un registro best-effort, no queremos reintentos infinitos.
+    return res.status(200).json({ received: true });
   }
 
   // Responder rápido a eventos que no nos interesan.
@@ -226,6 +317,50 @@ export default async function handler(req, res) {
       console.error("Storage factura:", e.message);
     }
 
+    // Guardar TAMBIÉN una copia de la factura en Google Drive (carpeta
+    // Facturación / Despacho de tráfico). Best-effort: si fallara, no rompemos la venta.
+    const driveRes = await subirFacturaADrive({
+      filename: `factura-${numeroFactura}.pdf`,
+      bytes: pdfBytes,
+    });
+    if (driveRes.ok) {
+      console.log(
+        "Factura en Google Drive:",
+        numeroFactura,
+        "→",
+        CARPETA_FACTURAS.join(" / "),
+        driveRes.webViewLink || driveRes.id,
+        driveRes.yaExistia ? "(ya existía)" : "(subida)"
+      );
+    } else {
+      console.error("Drive factura:", driveRes.error);
+    }
+
+    // Registrar la VENTA en el CRM (tabla facturas) para "Ventas y evolución".
+    try {
+      await crearFactura({
+        cliente_id: id,
+        numero: numeroFactura,
+        concepto: servicio.nombre,
+        slug,
+        base_cents: importes.baseCents,
+        iva_cents: importes.ivaCents,
+        total_cents: importes.totalCents,
+        iva_pct: 21,
+        estado: "pagada",
+        metodo_pago: "Tarjeta - Stripe",
+        stripe_session_id: session.id || null,
+        stripe_payment_intent:
+          typeof session.payment_intent === "string" ? session.payment_intent : null,
+        storage_path: facturaPath,
+        email,
+        nombre,
+        emitida_en: ahora.toISOString(),
+      });
+    } catch (e) {
+      console.error("crearFactura:", e.message);
+    }
+
     const introFactura = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#1d2733">
       <div style="background:#0f2c4d;padding:24px;border-radius:12px 12px 0 0">
         <h1 style="color:#fff;margin:0;font-size:20px">Pago confirmado ✔ · Tu factura</h1>
@@ -280,6 +415,22 @@ export default async function handler(req, res) {
 
     // 4) Aviso interno al despacho
     if (process.env.NOTIFY_EMAIL) {
+      const carpetaDrive = CARPETA_FACTURAS.join(" / ");
+      // Constancia clara y visible de si la factura quedó guardada en Google Drive.
+      const driveHtml = driveRes.ok
+        ? `<div style="margin:16px 0;padding:14px 16px;border-radius:10px;background:#e7f6ec;border:1px solid #adddc0">
+            <p style="margin:0;font-size:15px;color:#137333"><strong>✔ Factura guardada en Google Drive</strong></p>
+            <p style="margin:6px 0 0;font-size:13px;color:#137333">Carpeta: <strong>${esc(carpetaDrive)}</strong>${driveRes.yaExistia ? " (ya estaba guardada)" : ""}</p>
+            ${driveRes.webViewLink ? `<p style="margin:8px 0 0"><a href="${esc(driveRes.webViewLink)}" style="color:#0b5394;font-weight:bold">Abrir factura en Google Drive →</a></p>` : ""}
+          </div>`
+        : `<div style="margin:16px 0;padding:14px 16px;border-radius:10px;background:#fce8e6;border:1px solid #f5b5af">
+            <p style="margin:0;font-size:15px;color:#c5221f"><strong>⚠ La factura NO se pudo guardar en Google Drive</strong></p>
+            <p style="margin:6px 0 0;font-size:13px;color:#c5221f">Motivo: ${esc(driveRes.error || "desconocido")}. (El cliente sí tiene su PDF por email y en la plataforma.)</p>
+          </div>`;
+      const driveTxt = driveRes.ok
+        ? `Google Drive: GUARDADA en "${carpetaDrive}"${driveRes.yaExistia ? " (ya estaba)" : ""}${driveRes.webViewLink ? ` -> ${driveRes.webViewLink}` : ""}`
+        : `Google Drive: NO guardada (${driveRes.error || "error"})`;
+
       await enviarEmail({
         to: process.env.NOTIFY_EMAIL,
         subject: `💰 Nueva venta web: ${servicio.nombre} (factura ${totalReal})`,
@@ -292,8 +443,9 @@ export default async function handler(req, res) {
           <strong>Teléfono:</strong> ${esc(telefono || "—")}<br>
           <strong>Expediente:</strong> ${esc(numExpediente)}<br>
           <strong>Usuario ${nuevo ? "nuevo" : "ya existente"}</strong> en la plataforma.</p>
+          ${driveHtml}
         </div>`,
-        text: `Nueva venta: ${servicio.nombre}\nFactura ${numeroFactura}: ${totalReal} (IVA incl.)${MODO_TEST ? `\nMODO TEST: cobrado ${eur(cobradoCents)}` : ""}\nCliente: ${nombre} (${email})\nTel: ${telefono || "—"}\nExpediente: ${numExpediente}`,
+        text: `Nueva venta: ${servicio.nombre}\nFactura ${numeroFactura}: ${totalReal} (IVA incl.)${MODO_TEST ? `\nMODO TEST: cobrado ${eur(cobradoCents)}` : ""}\nCliente: ${nombre} (${email})\nTel: ${telefono || "—"}\nExpediente: ${numExpediente}\n${driveTxt}`,
       }).catch((e) => console.error("aviso interno:", e.message));
     }
 

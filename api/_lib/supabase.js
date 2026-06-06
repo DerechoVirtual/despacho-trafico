@@ -91,6 +91,34 @@ export async function crearNotificacion(clienteId, titulo, mensaje, canales = ["
   return rest("notificaciones", "POST", [{ cliente_id: clienteId, titulo, mensaje, canales, enlace }], "return=minimal");
 }
 
+// --- Facturas / ventas -----------------------------------------------------
+// Registra una venta/factura en la tabla `facturas` (la lee el CRM admin).
+export async function crearFactura(datos) {
+  return rest("facturas", "POST", [datos], "return=minimal");
+}
+
+// Busca un impago previo del mismo email + servicio (para contar intentos).
+export async function buscarImpago(email, slug) {
+  if (!email) return null;
+  const { url } = cfg();
+  const filtros = [
+    `email=eq.${encodeURIComponent(email)}`,
+    "estado=eq.fallida",
+    slug ? `slug=eq.${encodeURIComponent(slug)}` : null,
+    "select=id,intentos_fallidos",
+    "order=created_at.desc",
+    "limit=1",
+  ].filter(Boolean).join("&");
+  const r = await fetch(`${url}/rest/v1/facturas?${filtros}`, { headers: authHeaders() });
+  if (!r.ok) return null;
+  const rows = await r.json();
+  return rows[0] || null;
+}
+
+export async function actualizarImpago(id, datos) {
+  return rest(`facturas?id=eq.${id}`, "PATCH", datos, "return=minimal");
+}
+
 // --- Numeración correlativa de factura (RPC) -------------------------------
 export async function siguienteNumFactura() {
   const { url } = cfg();
