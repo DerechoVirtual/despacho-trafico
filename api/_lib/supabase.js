@@ -91,6 +91,18 @@ export async function crearNotificacion(clienteId, titulo, mensaje, canales = ["
   return rest("notificaciones", "POST", [{ cliente_id: clienteId, titulo, mensaje, canales }], "return=minimal");
 }
 
+// --- Numeración correlativa de factura (RPC) -------------------------------
+export async function siguienteNumFactura() {
+  const { url } = cfg();
+  const r = await fetch(`${url}/rest/v1/rpc/siguiente_num_factura`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: "{}",
+  });
+  if (!r.ok) throw new Error(`siguienteNumFactura ${r.status}: ${(await r.text()).slice(0, 150)}`);
+  return (await r.json()); // p.ej. "FRA-2026-00001"
+}
+
 // --- Storage ---------------------------------------------------------------
 export async function crearBucketSiNoExiste(bucket, isPublic = false) {
   const { url } = cfg();

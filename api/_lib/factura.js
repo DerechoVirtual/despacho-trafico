@@ -1,6 +1,7 @@
-// Genera la factura en PDF (maquetado perfecto con pdf-lib). El texto de la
-// factura (descripción del concepto y nota de cortesía) lo redacta Gemini 3.5
-// Flash; si Gemini falla, se usan textos por defecto. El PDF SIEMPRE se genera.
+// Genera la factura en PDF (diseño PREMIUM con pdf-lib) cumpliendo los datos
+// obligatorios de una factura en España (RD 1619/2012, art. 6). El texto del
+// concepto y la nota de cortesía los redacta Gemini 3.5 Flash; si falla, hay
+// textos de respaldo. El PDF SIEMPRE se genera.
 //
 // Variable de entorno: GEMINI_API_KEY
 
@@ -8,21 +9,30 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 const MODEL = "gemini-3.5-flash";
 
+// ⚠️ DATOS FISCALES DEL EMISOR — sustituir por los REALES de Carlos antes de
+// usar facturas con validez fiscal (NIF, domicilio fiscal completo).
 export const EMISOR = {
   nombre: "Rivero Abogados",
-  letrado: "Carlos Rivero García",
-  colegiacion: "Colegiado nº 12.345 · ICAM",
-  nif: "B-00000000",
-  domicilio: "Alicante (España)",
+  titular: "Carlos Rivero García",
+  nif: "12345678Z", // ← NIF/DNI real del titular o CIF del despacho
+  via: "Calle Bazán, 6 - 1º",
+  cp: "03001",
+  ciudad: "Alicante",
+  provincia: "Alicante",
+  pais: "España",
+  colegiacion: "Colegiado nº 12.345 · Ilustre Colegio de Abogados de Alicante (ICAM)",
   email: "carlosrivero@derechovirtual.org",
+  telefono: "+34 900 000 000",
 };
 
-const NAVY = rgb(0.059, 0.173, 0.302);
-const GOLD = rgb(0.784, 0.643, 0.361);
-const CREAM = rgb(0.965, 0.937, 0.886);
-const GRAY = rgb(0.39, 0.45, 0.51);
-const DARK = rgb(0.11, 0.15, 0.2);
-const LINE = rgb(0.88, 0.9, 0.93);
+// Paleta
+const NAVY = rgb(0.055, 0.16, 0.28);
+const GOLD = rgb(0.78, 0.64, 0.36);
+const CREAM = rgb(0.972, 0.952, 0.917);
+const GRAY = rgb(0.42, 0.47, 0.53);
+const LGRAY = rgb(0.6, 0.64, 0.69);
+const DARK = rgb(0.1, 0.14, 0.19);
+const HAIR = rgb(0.86, 0.88, 0.91);
 
 export function calcularImportes(baseCents, ivaPct = 21) {
   const ivaCents = Math.round(baseCents * (ivaPct / 100));
@@ -32,181 +42,172 @@ export function calcularImportes(baseCents, ivaPct = 21) {
 const eur = (c) =>
   (c / 100).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
-// Deja el texto en caracteres que las fuentes estándar (WinAnsi) pueden dibujar.
 function wansi(s = "") {
   return String(s)
-    .replace(/[‘’]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[–—]/g, "-")
-    .replace(/…/g, "...")
+    .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-").replace(/…/g, "...")
     .replace(/[^\x00-\xFF€]/g, "");
 }
 
 // --- Gemini: textos de la factura -----------------------------------------
 async function textosFactura(concepto) {
   const fallback = {
-    descripcion: "Honorarios profesionales por la prestación del servicio jurídico contratado.",
-    nota: `Factura pagada mediante tarjeta a través de Stripe. Gracias por confiar en ${EMISOR.nombre}.`,
+    descripcion:
+      "Honorarios profesionales por la dirección letrada y la prestación del servicio jurídico contratado.",
+    nota: `Le agradecemos la confianza depositada en ${EMISOR.nombre}. El pago de esta factura se ha efectuado con tarjeta a través de la pasarela segura Stripe.`,
     fuente: "respaldo",
   };
   const key = process.env.GEMINI_API_KEY;
   if (!key) return fallback;
-
-  const prompt = `Eres el sistema de facturación del despacho ${EMISOR.nombre} (abogacía de tráfico en España). Para una factura del servicio "${concepto}", redacta en español (tono profesional y cercano, sin tecnicismos innecesarios):
-- "descripcion": UNA frase (máx 18 palabras) que describa el concepto facturado de forma elegante para la línea de la factura.
-- "nota": UNA o dos frases de cortesía para el pie de la factura, agradeciendo la confianza e indicando que el pago se ha realizado con tarjeta mediante Stripe.
+  const prompt = `Eres el sistema de facturación del despacho ${EMISOR.nombre} (abogacía de tráfico, España). Para una factura del servicio "${concepto}", redacta en español jurídico, profesional y elegante:
+- "descripcion": UNA frase (máx 20 palabras) describiendo el concepto facturado para la línea de la factura.
+- "nota": UNA o dos frases formales de cortesía para el pie, agradeciendo la confianza e indicando que el pago se ha realizado con tarjeta mediante la pasarela Stripe.
 Devuelve solo JSON.`;
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.5,
-      maxOutputTokens: 512,
+      temperature: 0.5, maxOutputTokens: 512,
       responseMimeType: "application/json",
-      responseSchema: {
-        type: "object",
-        properties: { descripcion: { type: "string" }, nota: { type: "string" } },
-        required: ["descripcion", "nota"],
-      },
+      responseSchema: { type: "object", properties: { descripcion: { type: "string" }, nota: { type: "string" } }, required: ["descripcion", "nota"] },
       thinkingConfig: { thinkingBudget: 0 },
     },
   };
   try {
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
-    );
-    if (!r.ok) {
-      console.error("Gemini factura txt", r.status, (await r.text()).slice(0, 200));
-      return fallback;
-    }
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!r.ok) { console.error("Gemini factura txt", r.status, (await r.text()).slice(0, 200)); return fallback; }
     const j = await r.json();
     const text = j.candidates?.[0]?.content?.parts?.map((p) => p.text).filter(Boolean).join("") || "";
     const o = JSON.parse(text);
     if (!o.descripcion || !o.nota) return fallback;
     return { descripcion: o.descripcion, nota: o.nota, fuente: "gemini" };
-  } catch (e) {
-    console.error("textosFactura:", e.message);
-    return fallback;
-  }
+  } catch (e) { console.error("textosFactura:", e.message); return fallback; }
 }
 
-// Parte un texto en líneas que caben en maxWidth.
 function wrap(text, font, size, maxWidth) {
   const palabras = wansi(text).split(/\s+/);
-  const lineas = [];
-  let actual = "";
+  const out = [];
+  let cur = "";
   for (const p of palabras) {
-    const prueba = actual ? `${actual} ${p}` : p;
-    if (font.widthOfTextAtSize(prueba, size) > maxWidth && actual) {
-      lineas.push(actual);
-      actual = p;
-    } else {
-      actual = prueba;
-    }
+    const t = cur ? `${cur} ${p}` : p;
+    if (font.widthOfTextAtSize(t, size) > maxWidth && cur) { out.push(cur); cur = p; } else cur = t;
   }
-  if (actual) lineas.push(actual);
-  return lineas;
+  if (cur) out.push(cur);
+  return out;
 }
 
 // --- PDF -------------------------------------------------------------------
-// Devuelve { bytes: Uint8Array, fuente: "gemini"|"respaldo" }
+// datos: { numero, fechaExpedicion, fechaOperacion, formaPago, concepto,
+//          baseCents, ivaPct, cliente:{nombre,dni,direccion,cp,ciudad,email} }
 export async function generarFacturaPDF(datos) {
-  const { numero, fecha, concepto, cliente } = datos;
-  const importes = calcularImportes(datos.baseCents, datos.ivaPct ?? 21);
-  const { baseCents, ivaCents, totalCents, ivaPct } = importes;
+  const { numero, fechaExpedicion, fechaOperacion, formaPago, concepto, cliente } = datos;
+  const { baseCents, ivaCents, totalCents, ivaPct } = calcularImportes(datos.baseCents, datos.ivaPct ?? 21);
   const { descripcion, nota, fuente } = await textosFactura(concepto);
 
   const doc = await PDFDocument.create();
   doc.setTitle(`Factura ${numero} - ${EMISOR.nombre}`);
   doc.setAuthor(EMISOR.nombre);
-  const page = doc.addPage([595.28, 841.89]); // A4
-  const W = 595.28;
-  const H = 841.89;
-  const M = 50;
+  doc.setSubject(`Factura ${concepto}`);
+  const page = doc.addPage([595.28, 841.89]);
+  const W = 595.28, H = 841.89, M = 54;
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  const text = (s, x, y, size, f = font, color = DARK) =>
-    page.drawText(wansi(s), { x, y, size, font: f, color });
-  const right = (s, xRight, y, size, f = font, color = DARK) => {
-    const t = wansi(s);
-    page.drawText(t, { x: xRight - f.widthOfTextAtSize(t, size), y, size, font: f, color });
+  const T = (s, x, y, size, f = font, color = DARK) => page.drawText(wansi(s), { x, y, size, font: f, color });
+  const R = (s, xR, y, size, f = font, color = DARK) => {
+    const t = wansi(s); page.drawText(t, { x: xR - f.widthOfTextAtSize(t, size), y, size, font: f, color });
   };
+  const hr = (y, x1 = M, x2 = W - M, c = HAIR, th = 1) =>
+    page.drawLine({ start: { x: x1, y }, end: { x: x2, y }, thickness: th, color: c });
 
-  // Cabecera
-  page.drawRectangle({ x: 0, y: H - 120, width: W, height: 120, color: NAVY });
-  text(EMISOR.nombre.toUpperCase(), M, H - 58, 22, bold, rgb(1, 1, 1));
-  text(`${EMISOR.letrado}  ·  ${EMISOR.colegiacion}`, M, H - 80, 10, font, GOLD);
-  right("FACTURA", W - M, H - 50, 16, bold, rgb(1, 1, 1));
-  right(`Nº ${numero}`, W - M, H - 72, 10, font, rgb(0.85, 0.89, 0.94));
-  right(fecha, W - M, H - 88, 10, font, rgb(0.85, 0.89, 0.94));
+  // ---- Cabecera: marca + título FACTURA ----
+  let y = H - M;
+  T("RIVERO", M, y - 18, 26, bold, NAVY);
+  const wR = bold.widthOfTextAtSize("RIVERO", 26);
+  T("ABOGADOS", M + wR + 8, y - 18, 16, font, GOLD);
+  T("Defensa en expedientes sancionadores de tráfico", M, y - 34, 9, font, GRAY);
+  R("FACTURA", W - M, y - 8, 24, font, NAVY);
+  R(numero, W - M, y - 26, 11, bold, GOLD);
+  hr(y - 46, M, W - M, GOLD, 1.5);
 
-  // Emisor / Cliente
-  let y = H - 160;
-  text("EMISOR", M, y, 9, bold, GRAY);
-  text("FACTURAR A", W / 2 + 10, y, 9, bold, GRAY);
-  y -= 16;
-  const emisorLineas = [EMISOR.nombre, `NIF ${EMISOR.nif}`, EMISOR.domicilio, EMISOR.email];
-  const clienteLineas = [
-    cliente.nombre,
-    cliente.dni ? `DNI/NIE ${cliente.dni}` : null,
-    cliente.direccion || null,
-    [cliente.cp, cliente.ciudad].filter(Boolean).join(" ") || null,
-    cliente.email,
-  ].filter(Boolean);
-  const filas = Math.max(emisorLineas.length, clienteLineas.length);
-  for (let i = 0; i < filas; i++) {
-    if (emisorLineas[i]) text(emisorLineas[i], M, y - i * 14, 10, font, DARK);
-    if (clienteLineas[i]) text(clienteLineas[i], W / 2 + 10, y - i * 14, 10, font, DARK);
+  // ---- Emisor / Destinatario ----
+  y -= 70;
+  T("EMISOR", M, y, 8.5, bold, LGRAY);
+  T("FACTURAR A", W / 2 + 6, y, 8.5, bold, LGRAY);
+  y -= 15;
+  const emisor = [
+    [EMISOR.nombre, bold], [`${EMISOR.titular} · NIF ${EMISOR.nif}`, font],
+    [`${EMISOR.via}`, font], [`${EMISOR.cp} ${EMISOR.ciudad} (${EMISOR.provincia}) · ${EMISOR.pais}`, font],
+    [EMISOR.colegiacion, font], [`${EMISOR.email} · ${EMISOR.telefono}`, font],
+  ];
+  const dest = [
+    [cliente.nombre || "—", bold],
+    [`DNI/NIF: ${cliente.dni || "—"}`, font],
+    [cliente.direccion || "—", font],
+    [[cliente.cp, cliente.ciudad].filter(Boolean).join(" ") || "—", font],
+    [cliente.email || "", font],
+  ];
+  const rows = Math.max(emisor.length, dest.length);
+  for (let i = 0; i < rows; i++) {
+    if (emisor[i]) T(emisor[i][0], M, y - i * 13.5, 9.5, emisor[i][1], i === 0 ? NAVY : DARK);
+    if (dest[i]) T(dest[i][0], W / 2 + 6, y - i * 13.5, 9.5, dest[i][1], i === 0 ? NAVY : DARK);
   }
-  y = y - filas * 14 - 30;
+  y -= rows * 13.5 + 22;
 
-  // Tabla de conceptos
-  page.drawRectangle({ x: M, y: y - 6, width: W - 2 * M, height: 26, color: CREAM });
-  text("CONCEPTO", M + 12, y + 2, 10, bold, NAVY);
-  right("IMPORTE", W - M - 12, y + 2, 10, bold, NAVY);
-  y -= 24;
-
-  text(concepto, M + 12, y - 6, 12, bold, DARK);
-  const descLineas = wrap(descripcion, font, 9, W - 2 * M - 150);
-  let yy = y - 22;
-  for (const l of descLineas) {
-    text(l, M + 12, yy, 9, font, GRAY);
-    yy -= 12;
-  }
-  right(eur(baseCents), W - M - 12, y - 6, 12, font, DARK);
-  const filaBottom = Math.min(yy, y - 30);
-  page.drawLine({
-    start: { x: M, y: filaBottom },
-    end: { x: W - M, y: filaBottom },
-    thickness: 1,
-    color: LINE,
+  // ---- Franja de metadatos ----
+  const cellY = y;
+  page.drawRectangle({ x: M, y: cellY - 34, width: W - 2 * M, height: 40, color: CREAM });
+  const metas = [
+    ["FECHA DE EXPEDICIÓN", fechaExpedicion],
+    ["FECHA DE OPERACIÓN", fechaOperacion],
+    ["FORMA DE PAGO", formaPago],
+    ["RÉGIMEN", "General de IVA"],
+  ];
+  const cw = (W - 2 * M) / metas.length;
+  metas.forEach((m, i) => {
+    const x = M + 14 + i * cw;
+    T(m[0], x, cellY - 12, 7, bold, LGRAY);
+    T(m[1], x, cellY - 26, 9.5, font, DARK);
   });
+  y = cellY - 34 - 28;
 
-  // Totales
-  let ty = filaBottom - 26;
-  const xLbl = W - M - 220;
-  const xVal = W - M;
-  text("Base imponible", xLbl, ty, 11, font, GRAY);
-  right(eur(baseCents), xVal, ty, 11, font, DARK);
-  ty -= 18;
-  text(`IVA (${ivaPct}%)`, xLbl, ty, 11, font, GRAY);
-  right(eur(ivaCents), xVal, ty, 11, font, DARK);
-  ty -= 10;
-  page.drawLine({ start: { x: xLbl, y: ty }, end: { x: xVal, y: ty }, thickness: 1.5, color: NAVY });
-  ty -= 22;
-  text("TOTAL", xLbl, ty, 13, bold, NAVY);
-  right(eur(totalCents), xVal, ty, 13, bold, NAVY);
+  // ---- Tabla de conceptos ----
+  const cBase = W - M - 250, cIva = W - M - 130, cTot = W - M;
+  T("CONCEPTO", M, y, 8.5, bold, NAVY);
+  R("BASE", cBase + 30, y, 8.5, bold, NAVY);
+  R(`IVA ${ivaPct}%`, cIva + 30, y, 8.5, bold, NAVY);
+  R("TOTAL", cTot, y, 8.5, bold, NAVY);
+  y -= 8; hr(y); y -= 18;
 
-  // Nota de pie
-  const notaLineas = wrap(nota, font, 10, W - 2 * M);
-  let ny = 110;
-  page.drawLine({ start: { x: M, y: ny + 18 }, end: { x: W - M, y: ny + 18 }, thickness: 1, color: LINE });
-  for (const l of notaLineas) {
-    text(l, M, ny, 10, font, GRAY);
-    ny -= 14;
-  }
-  text(`${EMISOR.nombre} · ${EMISOR.letrado} · ${EMISOR.colegiacion}`, M, 50, 9, font, GRAY);
+  T(concepto, M, y, 11.5, bold, DARK);
+  R(eur(baseCents), cBase + 30, y, 10.5, font, DARK);
+  R(eur(ivaCents), cIva + 30, y, 10.5, font, DARK);
+  R(eur(totalCents), cTot, y, 10.5, font, DARK);
+  let dy = y - 15;
+  for (const l of wrap(descripcion, font, 9, cBase - M - 10)) { T(l, M, dy, 9, font, GRAY); dy -= 12; }
+  const tablaBottom = Math.min(dy + 4, y - 16);
+  hr(tablaBottom);
+
+  // ---- Totales ----
+  let ty = tablaBottom - 26;
+  const lblX = W - M - 230, valX = W - M;
+  T("Base imponible", lblX, ty, 10.5, font, GRAY); R(eur(baseCents), valX, ty, 10.5, font, DARK); ty -= 17;
+  T(`Cuota de IVA (${ivaPct}%)`, lblX, ty, 10.5, font, GRAY); R(eur(ivaCents), valX, ty, 10.5, font, DARK); ty -= 14;
+  page.drawRectangle({ x: lblX - 14, y: ty - 26, width: valX - lblX + 28, height: 30, color: NAVY });
+  T("TOTAL FACTURA", lblX, ty - 16, 12, bold, rgb(1, 1, 1));
+  R(eur(totalCents), valX, ty - 16, 13, bold, GOLD);
+
+  // ---- Pie: nota + menciones legales + datos ----
+  let ny = 132;
+  hr(ny + 16);
+  for (const l of wrap(nota, font, 9.5, W - 2 * M)) { T(l, M, ny, 9.5, font, GRAY); ny -= 13; }
+  ny -= 6;
+  T("Factura expedida conforme al Real Decreto 1619/2012, de 30 de noviembre. Operación sujeta y no exenta de IVA",
+    M, ny, 8, font, LGRAY); ny -= 11;
+  T("(régimen general). Conserve esta factura. Documento válido como justificante de pago.", M, ny, 8, font, LGRAY);
+
+  T(`${EMISOR.nombre} · ${EMISOR.titular} · NIF ${EMISOR.nif} · ${EMISOR.cp} ${EMISOR.ciudad}`, M, 52, 8, font, LGRAY);
+  R("Página 1 de 1", W - M, 52, 8, font, LGRAY);
 
   const bytes = await doc.save();
   return { bytes, fuente };

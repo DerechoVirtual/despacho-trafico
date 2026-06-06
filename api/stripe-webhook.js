@@ -20,6 +20,7 @@ import {
   crearBucketSiNoExiste,
   subirArchivo,
   urlFirmada,
+  siguienteNumFactura,
 } from "./_lib/supabase.js";
 
 // Necesitamos el cuerpo SIN parsear para validar la firma de Stripe.
@@ -139,6 +140,10 @@ export default async function handler(req, res) {
     const cobradoCents = session.amount_total || 0; // lo realmente cobrado (1€ + IVA en modo test)
     const referencia = (session.id || "").replace("cs_", "").slice(0, 12).toUpperCase();
     const crmUrl = process.env.CRM_URL || "https://proyecto-crm-abogados.vercel.app";
+    // DNI/NIF recogido en el checkout (campo personalizado).
+    const dni =
+      (session.custom_fields || []).find((f) => f.key === "dni")?.text?.value?.trim().toUpperCase() ||
+      null;
 
     if (!email || !servicio) {
       console.error("Webhook sin email o servicio:", { email, slug });
@@ -152,7 +157,14 @@ export default async function handler(req, res) {
     const fechaFactura = ahora.toLocaleDateString("es-ES", {
       day: "2-digit", month: "long", year: "numeric", timeZone: "Europe/Madrid",
     });
-    const numeroFactura = `RV-${ahora.getFullYear()}-${referencia}`;
+    // Numeración correlativa legal (con respaldo si la RPC fallara).
+    let numeroFactura;
+    try {
+      numeroFactura = await siguienteNumFactura();
+    } catch (e) {
+      console.error("num factura RPC:", e.message);
+      numeroFactura = `FRA-${ahora.getFullYear()}-${referencia}`;
+    }
 
     // 1) Usuario + perfil
     const password = tempPassword();
@@ -162,6 +174,7 @@ export default async function handler(req, res) {
       nombre,
       email,
       telefono,
+      dni,
       ciudad: cd.address?.city || null,
       cp: cd.address?.postal_code || null,
       direccion: cd.address?.line1 || null,
@@ -185,12 +198,15 @@ export default async function handler(req, res) {
     // 3) Factura en PDF (texto por Gemini 3.5 Flash, maquetado con pdf-lib)
     const { bytes: pdfBytes, fuente } = await generarFacturaPDF({
       numero: numeroFactura,
-      fecha: fechaFactura,
+      fechaExpedicion: fechaFactura,
+      fechaOperacion: fechaFactura,
+      formaPago: "Tarjeta · Stripe",
       concepto: servicio.nombre,
       baseCents: servicio.cents,
       ivaPct: 21,
       cliente: {
         nombre,
+        dni,
         email,
         direccion: cd.address?.line1 || null,
         cp: cd.address?.postal_code || null,

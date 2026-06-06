@@ -52,6 +52,14 @@ export default async function handler(req, res) {
     "payment_intent_data[metadata][slug]": slug,
     "phone_number_collection[enabled]": "true",
     billing_address_collection: "required",
+    // DNI/NIF del cliente: obligatorio para emitir factura completa (RD 1619/2012).
+    "custom_fields[0][key]": "dni",
+    "custom_fields[0][label][type]": "custom",
+    "custom_fields[0][label][custom]": "DNI / NIF (necesario para tu factura)",
+    "custom_fields[0][type]": "text",
+    "custom_fields[0][text][minimum_length]": 8,
+    "custom_fields[0][text][maximum_length]": 9,
+    "custom_fields[0][optional]": "false",
     custom_text: {
       submit: {
         message:
