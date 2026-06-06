@@ -11,6 +11,7 @@ import Contacto from "./pages/Contacto.jsx";
 import AvisoLegal from "./pages/AvisoLegal.jsx";
 import Privacidad from "./pages/Privacidad.jsx";
 import Cookies from "./pages/Cookies.jsx";
+import AntiMultaitor from "./pages/AntiMultaitor.jsx";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -25,6 +26,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/opiniones" element={<Opiniones />} />
           <Route path="/contacto" element={<Contacto />} />
         </Route>
+        <Route path="/anti-multaitor" element={<AntiMultaitor />} />
         <Route path="/aviso-legal" element={<AvisoLegal />} />
         <Route path="/privacidad" element={<Privacidad />} />
         <Route path="/cookies" element={<Cookies />} />

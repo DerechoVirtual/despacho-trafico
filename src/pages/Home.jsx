@@ -1,5 +1,6 @@
 import Hero from "../components/Hero.jsx";
 import TrustBar from "../components/TrustBar.jsx";
+import AntiMultaitorBanner from "../components/AntiMultaitorBanner.jsx";
 import Services from "../components/Services.jsx";
 import InfractionTypes from "../components/InfractionTypes.jsx";
 import Process from "../components/Process.jsx";
@@ -22,6 +23,7 @@ export default function Home() {
     <>
       <Hero />
       <TrustBar />
+      <AntiMultaitorBanner />
       <Services />
       <InfractionTypes />
       <Process />
