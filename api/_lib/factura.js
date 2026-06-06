@@ -9,20 +9,20 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 const MODEL = "gemini-3.5-flash";
 
-// ⚠️ DATOS FISCALES DEL EMISOR — sustituir por los REALES de Carlos antes de
-// usar facturas con validez fiscal (NIF, domicilio fiscal completo).
+// DATOS FISCALES DEL EMISOR — datos de PRUEBA inventados (despacho ficticio del
+// curso). NIF con letra de control válida. Sustituir si se usa en real.
 export const EMISOR = {
   nombre: "Rivero Abogados",
   titular: "Carlos Rivero García",
-  nif: "12345678Z", // ← NIF/DNI real del titular o CIF del despacho
-  via: "Calle Bazán, 6 - 1º",
-  cp: "03001",
+  nif: "48635129L", // DNI de prueba (letra de control correcta)
+  via: "Avenida de Maisonnave, 28 - 4º C",
+  cp: "03003",
   ciudad: "Alicante",
   provincia: "Alicante",
   pais: "España",
-  colegiacion: "Colegiado nº 12.345 · Ilustre Colegio de Abogados de Alicante (ICAM)",
+  colegiacion: "Colegiado nº 12.345 · Ilustre Colegio de Abogados de Madrid (ICAM)",
   email: "carlosrivero@derechovirtual.org",
-  telefono: "+34 900 000 000",
+  telefono: "+34 965 123 456",
 };
 
 // Paleta
