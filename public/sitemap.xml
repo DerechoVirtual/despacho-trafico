@@ -6,6 +6,56 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://www.riveroabogados.es/servicios</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.riveroabogados.es/servicios/alegaciones</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.riveroabogados.es/servicios/identificacion-conductor</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.riveroabogados.es/servicios/recurso-reposicion</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.riveroabogados.es/servicios/oposicion-apremio</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.riveroabogados.es/servicios/defensa-penal</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.riveroabogados.es/servicios/carnet-licencias</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.riveroabogados.es/sobre-mi</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.riveroabogados.es/opiniones</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.riveroabogados.es/contacto</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://www.riveroabogados.es/aviso-legal</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

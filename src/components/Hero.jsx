@@ -1,16 +1,33 @@
 import { useState } from "react";
+import { enviarConsulta } from "../lib/enviarConsulta.js";
 
 export default function Hero() {
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({ nombre: "", telefono: "", tipo: "" });
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setSubmitted(true);
+    setError("");
+    setSending(true);
+    try {
+      await enviarConsulta({
+        nombre: form.nombre,
+        telefono: form.telefono,
+        tipoMulta: form.tipo,
+        descripcion: "(Consulta rápida desde el formulario de inicio)",
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -232,12 +249,18 @@ export default function Hero() {
                         <option value="otra">Otra</option>
                       </select>
                     </div>
+                    {error && (
+                      <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+                        {error}
+                      </p>
+                    )}
                     {/* Submit */}
                     <button
                       type="submit"
-                      className="inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark mt-2"
+                      disabled={sending}
+                      className="inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark mt-2 disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                      Quiero que estudien mi multa
+                      {sending ? "Enviando…" : "Quiero que estudien mi multa"}
                     </button>
                   </form>
                   <p className="mt-4 text-center text-xs text-gray-400">

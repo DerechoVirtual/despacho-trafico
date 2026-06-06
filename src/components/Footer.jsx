@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { servicios } from "../data/servicios.js";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -6,34 +7,45 @@ export default function Footer() {
     <footer className="bg-navy-900 text-slate-300">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 md:grid-cols-4">
         <div>
-          <a href="#inicio" className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-lg bg-navy font-display text-xl font-bold text-gold">
               R
             </span>
             <span className="font-display text-xl text-white">
               Rivero <strong className="text-gold">Abogados</strong>
             </span>
-          </a>
+          </Link>
           <p className="mt-4 max-w-xs text-sm">
             Especialistas en la defensa de multas y sanciones de tráfico en toda España.
+          </p>
+          <p className="mt-4 text-sm">
+            <a href="tel:+34900000000" className="hover:text-gold">📞 900 000 000</a>
+            <br />
+            <a href="mailto:info@riveroabogados.es" className="hover:text-gold">
+              info@riveroabogados.es
+            </a>
           </p>
         </div>
 
         <div>
           <h4 className="mb-4 font-semibold text-white">Servicios</h4>
-          {["Alegaciones", "Recursos", "Defensa penal", "Carnet y licencias"].map((s) => (
-            <a key={s} href="#servicios" className="block py-1 text-sm hover:text-gold">
-              {s}
-            </a>
+          {servicios.map((s) => (
+            <Link
+              key={s.slug}
+              to={`/servicios/${s.slug}`}
+              className="block py-1 text-sm hover:text-gold"
+            >
+              {s.cardTitulo}
+            </Link>
           ))}
         </div>
 
         <div>
           <h4 className="mb-4 font-semibold text-white">Despacho</h4>
-          <a href="#despacho" className="block py-1 text-sm hover:text-gold">Sobre nosotros</a>
-          <a href="#casos" className="block py-1 text-sm hover:text-gold">Casos de éxito</a>
-          <a href="#faq" className="block py-1 text-sm hover:text-gold">Preguntas frecuentes</a>
-          <a href="#contacto" className="block py-1 text-sm hover:text-gold">Contacto</a>
+          <Link to="/sobre-mi" className="block py-1 text-sm hover:text-gold">Sobre mí</Link>
+          <Link to="/opiniones" className="block py-1 text-sm hover:text-gold">Opiniones</Link>
+          <Link to="/#faq" className="block py-1 text-sm hover:text-gold">Preguntas frecuentes</Link>
+          <Link to="/contacto" className="block py-1 text-sm hover:text-gold">Contacto</Link>
         </div>
 
         <div>
