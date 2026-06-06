@@ -37,37 +37,72 @@ async function getAccessToken(env) {
   return (await r.json()).access_token;
 }
 
-// Envía un correo. { to, subject, html, text, replyTo, fromName }
-export async function enviarEmail({ to, subject, html, text, replyTo, fromName }) {
+// Envía un correo.
+// { to, subject, html, text, replyTo, fromName, attachments?: [{filename, mimeType, contentBase64}] }
+export async function enviarEmail({ to, subject, html, text, replyTo, fromName, attachments }) {
   const env = process.env;
   if (!env.GMAIL_CLIENT_ID || !env.GMAIL_CLIENT_SECRET || !env.GMAIL_REFRESH_TOKEN) {
     throw new Error("Faltan variables de entorno de Gmail");
   }
   const from = env.FROM_EMAIL || env.NOTIFY_EMAIL;
-  const boundary = "rivero_" + Math.random().toString(36).slice(2);
-  const mime = [
+  const alt = "alt_" + Math.random().toString(36).slice(2);
+
+  // Cuerpo (texto + html) en multipart/alternative.
+  const cuerpo = [
+    `--${alt}`,
+    'Content-Type: text/plain; charset="UTF-8"',
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    text || "",
+    `--${alt}`,
+    'Content-Type: text/html; charset="UTF-8"',
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    html || "",
+    `--${alt}--`,
+    "",
+  ].join("\r\n");
+
+  const cabeceras = [
     `From: ${fromName ? `${fromName} ` : "Rivero Abogados "}<${from}>`,
     `To: ${to}`,
     replyTo ? `Reply-To: ${replyTo}` : null,
     `Subject: ${encHeader(subject)}`,
     "MIME-Version: 1.0",
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    "",
-    `--${boundary}`,
-    'Content-Type: text/plain; charset="UTF-8"',
-    "Content-Transfer-Encoding: 8bit",
-    "",
-    text || "",
-    `--${boundary}`,
-    'Content-Type: text/html; charset="UTF-8"',
-    "Content-Transfer-Encoding: 8bit",
-    "",
-    html || "",
-    `--${boundary}--`,
-    "",
-  ]
-    .filter((l) => l !== null)
-    .join("\r\n");
+  ].filter((l) => l !== null);
+
+  let mime;
+  if (attachments && attachments.length) {
+    const mix = "mix_" + Math.random().toString(36).slice(2);
+    const partes = [
+      ...cabeceras,
+      `Content-Type: multipart/mixed; boundary="${mix}"`,
+      "",
+      `--${mix}`,
+      `Content-Type: multipart/alternative; boundary="${alt}"`,
+      "",
+      cuerpo,
+    ];
+    for (const a of attachments) {
+      partes.push(
+        `--${mix}`,
+        `Content-Type: ${a.mimeType}; name="${a.filename}"`,
+        "Content-Transfer-Encoding: base64",
+        `Content-Disposition: attachment; filename="${a.filename}"`,
+        "",
+        a.contentBase64.replace(/(.{76})/g, "$1\r\n"),
+      );
+    }
+    partes.push(`--${mix}--`, "");
+    mime = partes.join("\r\n");
+  } else {
+    mime = [
+      ...cabeceras,
+      `Content-Type: multipart/alternative; boundary="${alt}"`,
+      "",
+      cuerpo,
+    ].join("\r\n");
+  }
 
   const accessToken = await getAccessToken(env);
   const r = await fetch(SEND_URL, {

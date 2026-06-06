@@ -8,8 +8,9 @@
 //   SUPABASE_URL, SUPABASE_SECRET_KEY, CRM_URL, NOTIFY_EMAIL (+ las de Gmail)
 
 import crypto from "node:crypto";
-import { getServicio, DOC_TITULOS } from "./_lib/servicios.js";
+import { getServicio, DOC_TITULOS, MODO_TEST } from "./_lib/servicios.js";
 import { enviarEmail, esc } from "./_lib/gmail.js";
+import { generarFacturaHTML, calcularImportes } from "./_lib/factura.js";
 import {
   crearUsuario,
   actualizarPerfil,
@@ -54,29 +55,6 @@ function tempPassword() {
 }
 
 // --- Plantillas de email ---------------------------------------------------
-function emailConfirmacion({ nombre, servicio, total, referencia }) {
-  const html = `
-  <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#1d2733">
-    <div style="background:#0f2c4d;padding:28px;border-radius:12px 12px 0 0">
-      <h1 style="color:#fff;margin:0;font-size:20px">Pago confirmado ✔</h1>
-      <p style="color:#c8a45c;margin:6px 0 0;font-size:13px">Rivero Abogados · Defensa de multas de tráfico</p>
-    </div>
-    <div style="border:1px solid #eee;border-top:0;border-radius:0 0 12px 12px;padding:28px">
-      <p style="font-size:15px">Hola ${esc(nombre)},</p>
-      <p style="font-size:15px;line-height:1.6">Hemos recibido correctamente tu pago. Gracias por confiar tu defensa en nosotros. Estos son los datos de tu contratación:</p>
-      <table style="width:100%;border-collapse:collapse;font-size:15px;margin:16px 0">
-        <tr><td style="padding:8px 0;color:#64748b;width:160px">Servicio</td><td style="padding:8px 0;font-weight:bold">${esc(servicio)}</td></tr>
-        <tr><td style="padding:8px 0;color:#64748b">Importe (IVA incl.)</td><td style="padding:8px 0;font-weight:bold">${esc(total)}</td></tr>
-        <tr><td style="padding:8px 0;color:#64748b">Referencia</td><td style="padding:8px 0;color:#94a3b8">${esc(referencia)}</td></tr>
-      </table>
-      <p style="font-size:15px;line-height:1.6">En un correo aparte te enviamos el acceso a tu plataforma para que empieces a subir la documentación. Si tienes cualquier duda, responde a este email.</p>
-      <p style="font-size:14px;color:#64748b;margin-top:24px">Carlos Rivero García · Colegiado nº 12.345 (ICAM)</p>
-    </div>
-  </div>`;
-  const text = `Pago confirmado.\n\nServicio: ${servicio}\nImporte (IVA incl.): ${total}\nReferencia: ${referencia}\n\nEn un correo aparte te enviamos el acceso a tu plataforma.\n\nRivero Abogados`;
-  return { html, text };
-}
-
 function emailBienvenida({ nombre, email, password, crmUrl, servicio, docs }) {
   const lista = docs
     .map(
@@ -155,7 +133,7 @@ export default async function handler(req, res) {
     const email = cd.email;
     const nombre = (cd.name || "").trim() || "cliente";
     const telefono = cd.phone || null;
-    const total = eur(session.amount_total || (servicio ? Math.round(servicio.cents * 1.21) : 0));
+    const cobradoCents = session.amount_total || 0; // lo realmente cobrado (1€ + IVA en modo test)
     const referencia = (session.id || "").replace("cs_", "").slice(0, 12).toUpperCase();
     const crmUrl = process.env.CRM_URL || "https://proyecto-crm-abogados.vercel.app";
 
@@ -163,6 +141,15 @@ export default async function handler(req, res) {
       console.error("Webhook sin email o servicio:", { email, slug });
       return res.status(200).json({ received: true });
     }
+
+    // Importes de la FACTURA = importe real del servicio (aunque en test se cobre 1€).
+    const importes = calcularImportes(servicio.cents, 21);
+    const totalReal = eur(importes.totalCents);
+    const ahora = new Date();
+    const fechaFactura = ahora.toLocaleDateString("es-ES", {
+      day: "2-digit", month: "long", year: "numeric", timeZone: "Europe/Madrid",
+    });
+    const numeroFactura = `RV-${ahora.getFullYear()}-${referencia}`;
 
     // 1) Usuario + perfil
     const password = tempPassword();
@@ -182,7 +169,7 @@ export default async function handler(req, res) {
     await reemplazarExpediente(id, numExpediente, {
       infraccion: servicio.infraccion,
       estado: "Documentación pendiente",
-      honorarios: Math.round((session.amount_total || servicio.cents) / 100),
+      honorarios: Math.round(servicio.cents / 100),
       administracion: "Pendiente de asignar",
     });
     await reemplazarDocumentos(id, servicio.docs);
@@ -192,13 +179,40 @@ export default async function handler(req, res) {
       `Hemos abierto tu expediente para tu ${servicio.nombre}. El siguiente paso es subir la documentación pendiente desde "Mi documentación".`
     );
 
-    // 3) Emails al cliente
-    const conf = emailConfirmacion({ nombre, servicio: servicio.nombre, total, referencia });
+    // 3) Factura (generada con Gemini 3.5 Flash) -> email + adjunto
+    const { html: facturaHtml, fuente } = await generarFacturaHTML({
+      numero: numeroFactura,
+      fecha: fechaFactura,
+      concepto: servicio.nombre,
+      baseCents: servicio.cents,
+      ivaPct: 21,
+      cliente: {
+        nombre,
+        email,
+        direccion: cd.address?.line1 || null,
+        cp: cd.address?.postal_code || null,
+        ciudad: cd.address?.city || null,
+      },
+    });
+    console.log("Factura generada por:", fuente, numeroFactura);
+
+    const introFactura = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:640px;margin:0 auto 16px;color:#1d2733">
+      <p style="font-size:15px;line-height:1.6">Hola ${esc(nombre)}, hemos recibido tu pago correctamente. Adjuntamos tu <strong>factura</strong> por la contratación de <strong>${esc(servicio.nombre)}</strong>. También puedes verla aquí abajo. En un correo aparte te damos acceso a tu plataforma.</p>
+    </div>`;
+
     await enviarEmail({
       to: email,
-      subject: `Pago confirmado · ${servicio.nombre} · Rivero Abogados`,
-      ...conf,
+      subject: `Tu factura ${numeroFactura} · ${servicio.nombre} · Rivero Abogados`,
+      html: introFactura + facturaHtml,
+      text: `Hola ${nombre},\n\nHemos recibido tu pago. Adjuntamos tu factura ${numeroFactura} por "${servicio.nombre}".\nBase: ${eur(importes.baseCents)} · IVA 21%: ${eur(importes.ivaCents)} · TOTAL: ${totalReal}\n\nEn un correo aparte te enviamos el acceso a tu plataforma.\n\nRivero Abogados`,
       replyTo: process.env.NOTIFY_EMAIL,
+      attachments: [
+        {
+          filename: `factura-${numeroFactura}.html`,
+          mimeType: "text/html",
+          contentBase64: Buffer.from(facturaHtml, "utf-8").toString("base64"),
+        },
+      ],
     });
 
     const bienv = emailBienvenida({
@@ -220,17 +234,18 @@ export default async function handler(req, res) {
     if (process.env.NOTIFY_EMAIL) {
       await enviarEmail({
         to: process.env.NOTIFY_EMAIL,
-        subject: `💰 Nueva venta web: ${servicio.nombre} (${total})`,
+        subject: `💰 Nueva venta web: ${servicio.nombre} (factura ${totalReal})`,
         html: `<div style="font-family:Arial,sans-serif">
           <h2 style="color:#0f2c4d">Nueva contratación online</h2>
           <p><strong>Servicio:</strong> ${esc(servicio.nombre)}<br>
-          <strong>Importe:</strong> ${esc(total)}<br>
+          <strong>Factura:</strong> ${esc(numeroFactura)} · ${esc(totalReal)} (IVA incl.)<br>
+          ${MODO_TEST ? `<strong>⚠️ MODO TEST:</strong> cobrado en Stripe ${esc(eur(cobradoCents))}<br>` : ""}
           <strong>Cliente:</strong> ${esc(nombre)} (${esc(email)})<br>
           <strong>Teléfono:</strong> ${esc(telefono || "—")}<br>
           <strong>Expediente:</strong> ${esc(numExpediente)}<br>
           <strong>Usuario ${nuevo ? "nuevo" : "ya existente"}</strong> en la plataforma.</p>
         </div>`,
-        text: `Nueva venta: ${servicio.nombre} (${total})\nCliente: ${nombre} (${email})\nTel: ${telefono || "—"}\nExpediente: ${numExpediente}`,
+        text: `Nueva venta: ${servicio.nombre}\nFactura ${numeroFactura}: ${totalReal} (IVA incl.)${MODO_TEST ? `\nMODO TEST: cobrado ${eur(cobradoCents)}` : ""}\nCliente: ${nombre} (${email})\nTel: ${telefono || "—"}\nExpediente: ${numExpediente}`,
       }).catch((e) => console.error("aviso interno:", e.message));
     }
 
