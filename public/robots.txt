@@ -1,4 +1,9 @@
+# Rivero Abogados — Despacho de tráfico
+# https://despachotrafico.org
+
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /pago-confirmado
 
 Sitemap: https://despachotrafico.org/sitemap.xml

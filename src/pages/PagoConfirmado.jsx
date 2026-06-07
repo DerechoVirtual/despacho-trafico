@@ -30,6 +30,7 @@ export default function PagoConfirmado() {
     title: "Pago confirmado | Rivero Abogados",
     description: "Tu pago se ha completado. Te explicamos los siguientes pasos.",
     path: "/pago-confirmado",
+    noindex: true,
   });
 
   return (
