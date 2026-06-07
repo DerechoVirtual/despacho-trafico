@@ -1,72 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.riveroabogados.es/</loc>
+    <loc>https://despachotrafico.org/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/servicios</loc>
+    <loc>https://despachotrafico.org/servicios</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/servicios/alegaciones</loc>
+    <loc>https://despachotrafico.org/servicios/alegaciones</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/servicios/identificacion-conductor</loc>
+    <loc>https://despachotrafico.org/servicios/identificacion-conductor</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/servicios/recurso-reposicion</loc>
+    <loc>https://despachotrafico.org/servicios/recurso-reposicion</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/servicios/oposicion-apremio</loc>
+    <loc>https://despachotrafico.org/servicios/oposicion-apremio</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/servicios/defensa-penal</loc>
+    <loc>https://despachotrafico.org/servicios/defensa-penal</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/servicios/carnet-licencias</loc>
+    <loc>https://despachotrafico.org/servicios/carnet-licencias</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/sobre-mi</loc>
+    <loc>https://despachotrafico.org/sobre-mi</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/opiniones</loc>
+    <loc>https://despachotrafico.org/opiniones</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/contacto</loc>
+    <loc>https://despachotrafico.org/contacto</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/aviso-legal</loc>
+    <loc>https://despachotrafico.org/aviso-legal</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/privacidad</loc>
+    <loc>https://despachotrafico.org/privacidad</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.riveroabogados.es/cookies</loc>
+    <loc>https://despachotrafico.org/cookies</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const SITE = "https://www.riveroabogados.es";
+const SITE = "https://despachotrafico.org";
 
 function setMeta(attr, key, content) {
   if (!content) return null;
