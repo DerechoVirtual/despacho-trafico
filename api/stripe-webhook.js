@@ -131,8 +131,12 @@ async function registrarImpago(evento) {
     nombre = obj.billing_details?.name || null;
   }
 
+  // IMPORTANTE: esta cuenta de Stripe es compartida por todos los negocios. Solo
+  // registramos como impago del DESPACHO los eventos cuyo slug es un servicio nuestro;
+  // los fallos de pago de otros negocios (cursos, etc.) se ignoran aquí.
   const servicio = getServicio(slug);
-  const concepto = servicio?.nombre || "Pago de servicio (no completado)";
+  if (!servicio) return;
+  const concepto = servicio.nombre || "Pago de servicio (no completado)";
   // Importe de referencia: el real del servicio si lo conocemos; si no, lo del evento.
   const baseRef = servicio ? servicio.cents : Math.round(amountCents / 1.21) || amountCents;
   const importes = calcularImportes(baseRef, 21);
