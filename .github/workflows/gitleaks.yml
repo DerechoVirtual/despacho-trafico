@@ -1,0 +1,29 @@
+name: Gitleaks - escaneo de secretos
+
+# Escanea el repositorio en busca de secretos/tokens en cada push y PR.
+# No requiere licencia (descarga el binario oficial de Gitleaks directamente).
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gitleaks:
+    name: Escanear secretos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (historial completo)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar Gitleaks
+        run: |
+          VER=8.30.1
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VER}/gitleaks_${VER}_linux_x64.tar.gz" -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          chmod +x gitleaks
+
+      - name: Escanear todo el historial
+        run: ./gitleaks git . --redact --no-banner --exit-code 1

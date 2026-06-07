@@ -1,0 +1,31 @@
+# ============================================================================
+# Configuración de Gitleaks — Rivero Abogados (despacho-trafico)
+# Escaneo de secretos/tokens. Extiende el conjunto de reglas por defecto.
+# Docs: https://github.com/gitleaks/gitleaks
+# ============================================================================
+title = "Gitleaks config - despacho-trafico"
+
+[extend]
+# Usar todas las reglas integradas de Gitleaks (Stripe, Google, AWS, JWT, etc.).
+useDefault = true
+
+# ----------------------------------------------------------------------------
+# Allowlist de FALSOS POSITIVOS conocidos.
+# Las funciones serverless de api/ leen SIEMPRE las credenciales desde variables
+# de entorno (env.GMAIL_CLIENT_SECRET, process.env.GDRIVE_*, ...), nunca como
+# valores literales. Esto evita que esas referencias se marquen por error.
+# ----------------------------------------------------------------------------
+[[allowlists]]
+description = "Referencias a variables de entorno (no son secretos literales)"
+regexTarget = "line"
+regexes = [
+  '''(client_secret|refresh_token|api[_-]?key|secret|token)\s*[:=]\s*(env|process\.env|import\.meta\.env)\.[A-Za-z0-9_]+''',
+]
+
+[[allowlists]]
+description = "Rutas ignoradas (no forman parte del codigo desplegado)"
+paths = [
+  '''_imggen/''',
+  '''_static_anterior/''',
+  '''(.*?)\.example$''',
+]

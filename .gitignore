@@ -42,3 +42,8 @@ CLAUDE.md
 # Carpeta de trabajo de generación de imágenes y scripts auxiliares (no forma parte del sitio)
 _imggen/
 .indexnow-key
+
+# Artefactos de trabajo de asistentes (informes, scripts auxiliares) — no forman parte del sitio
+_informe_costes.cjs
+*.docx
+__gitleaks_test.txt

@@ -1,0 +1,38 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Pre-commit hook — Gitleaks
+# Bloquea el commit si detecta posibles secretos/tokens en los cambios staged.
+# Instalado: 2026-06-07 · Repo: DerechoVirtual/despacho-trafico
+# Activado con:  git config core.hooksPath .githooks
+# ----------------------------------------------------------------------------
+
+# 1) Buscar gitleaks en el PATH; si no, intentar la ruta de instalación de winget.
+if command -v gitleaks >/dev/null 2>&1; then
+  GL=gitleaks
+else
+  GL_FALLBACK="$(printf '%s' "$LOCALAPPDATA" | tr '\\' '/')/Microsoft/WinGet/Packages/Gitleaks.Gitleaks_Microsoft.Winget.Source_8wekyb3d8bbwe/gitleaks.exe"
+  if [ -x "$GL_FALLBACK" ]; then
+    GL="$GL_FALLBACK"
+  else
+    echo "[gitleaks] No instalado; escaneo de secretos OMITIDO."
+    echo "           Instálalo con:  winget install Gitleaks.Gitleaks"
+    exit 0
+  fi
+fi
+
+# 2) Escanear solo los cambios que se van a commitear.
+"$GL" git --pre-commit --staged --redact --no-banner
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "==========================================================================="
+  echo " COMMIT BLOQUEADO: Gitleaks ha detectado posibles secretos en los cambios."
+  echo "==========================================================================="
+  echo "  - Quita el secreto del codigo y usa variables de entorno"
+  echo "    (process.env.X en las funciones api/ ; configuralas en Vercel)."
+  echo "  - Si es un FALSO POSITIVO, documentalo en el allowlist de .gitleaks.toml."
+  echo "  - Para saltarte el hook puntualmente (NO recomendado): git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+exit 0
