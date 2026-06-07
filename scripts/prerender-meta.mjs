@@ -57,7 +57,8 @@ function injectMeta(base, { title, description, path, noindex, image }) {
   html = replaceTag(html, /<meta\s+property="og:url"[\s\S]*?>/i, `<meta property="og:url" content="${url}" />`);
   html = replaceTag(html, /<meta\s+property="og:title"[\s\S]*?>/i, `<meta property="og:title" content="${t}" />`);
   html = replaceTag(html, /<meta\s+property="og:description"[\s\S]*?>/i, `<meta property="og:description" content="${d}" />`);
-  html = replaceTag(html, /<meta\s+property="og:image"[\s\S]*?>/i, `<meta property="og:image" content="${img}" />`);
+  html = replaceTag(html, /<meta\s+property="og:image"\s+content[\s\S]*?>/i, `<meta property="og:image" content="${img}" />`);
+  html = replaceTag(html, /<meta\s+property="og:image:secure_url"[\s\S]*?>/i, `<meta property="og:image:secure_url" content="${img}" />`);
   html = replaceTag(html, /<meta\s+name="twitter:image"[\s\S]*?>/i, `<meta name="twitter:image" content="${img}" />`);
   return html;
 }

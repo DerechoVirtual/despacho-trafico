@@ -51,9 +51,11 @@ export function useSeo({ title, description, path, noindex = false }) {
     push(restoreMeta(setMeta("property", "og:description", description), ""));
     push(restoreMeta(setMeta("property", "og:url", url), ""));
 
-    // Imagen de redes propia de cada ruta.
+    // Imagen de redes propia de cada ruta (baseline JPEG 1200x630).
     const img = SITE + ogImageFor(path || "/");
     push(restoreMeta(setMeta("property", "og:image", img), ""));
+    push(restoreMeta(setMeta("property", "og:image:secure_url", img), ""));
+    push(restoreMeta(setMeta("property", "og:image:type", "image/jpeg"), ""));
     push(restoreMeta(setMeta("name", "twitter:image", img), ""));
 
     // Robots: por defecto indexable; noindex para páginas transaccionales.
