@@ -93,23 +93,47 @@ function startServer(shell) {
   });
 }
 
-async function fullRender(routes, base) {
-  let puppeteer;
+// Lanza un navegador headless probando, en orden:
+//  1) @sparticuz/chromium + puppeteer-core  → entorno Vercel/Lambda (Linux)
+//  2) puppeteer (con su Chromium)           → máquina local
+async function launchBrowser() {
+  // 1) Vercel / serverless
   try {
-    puppeteer = (await import("puppeteer")).default;
-  } catch {
-    return false; // no instalado → fallback
+    const chromium = (await import("@sparticuz/chromium")).default;
+    const pc = (await import("puppeteer-core")).default;
+    const executablePath = await chromium.executablePath();
+    if (executablePath) {
+      const b = await pc.launch({
+        args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
+        defaultViewport: { width: 1280, height: 800 },
+        executablePath,
+        headless: chromium.headless ?? true,
+      });
+      console.log("[prerender] navegador: @sparticuz/chromium");
+      return b;
+    }
+  } catch (e) {
+    console.warn("[prerender] @sparticuz no disponible:", e?.message || e);
   }
-  let browser, server;
+  // 2) Local
   try {
-    browser = await puppeteer.launch({
+    const puppeteer = (await import("puppeteer")).default;
+    const b = await puppeteer.launch({
       headless: "new",
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     });
+    console.log("[prerender] navegador: puppeteer (local)");
+    return b;
   } catch (e) {
-    console.warn("[prerender] no se pudo lanzar el navegador:", e?.message || e);
-    return false;
+    console.warn("[prerender] puppeteer local no disponible:", e?.message || e);
   }
+  return null;
+}
+
+async function fullRender(routes, base) {
+  let server;
+  const browser = await launchBrowser();
+  if (!browser) return false;
   try {
     server = await startServer(base);
     const port = server.address().port;
