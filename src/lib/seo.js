@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { ogImageFor } from "../data/ogImages.js";
 
 const SITE = "https://despachotrafico.org";
 
@@ -49,6 +50,11 @@ export function useSeo({ title, description, path, noindex = false }) {
     push(restoreMeta(setMeta("property", "og:title", title), ""));
     push(restoreMeta(setMeta("property", "og:description", description), ""));
     push(restoreMeta(setMeta("property", "og:url", url), ""));
+
+    // Imagen de redes propia de cada ruta.
+    const img = SITE + ogImageFor(path || "/");
+    push(restoreMeta(setMeta("property", "og:image", img), ""));
+    push(restoreMeta(setMeta("name", "twitter:image", img), ""));
 
     // Robots: por defecto indexable; noindex para páginas transaccionales.
     const robots = setMeta(
