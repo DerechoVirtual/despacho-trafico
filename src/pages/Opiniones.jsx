@@ -98,10 +98,12 @@ export default function Opiniones() {
       <section className="bg-cream py-20 md:py-28">
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {opiniones.map((o) => (
+            {opiniones.map((o, i) => (
               <figure
                 key={o.nombre}
-                className="flex flex-col rounded-2xl border border-black/5 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                className="card-lift flex flex-col rounded-2xl border border-black/5 bg-white p-7 shadow-sm"
+                data-reveal
+                style={{ "--rd": `${(i % 3) * 110}ms` }}
               >
                 <Stars />
                 <blockquote className="mt-4 flex-1 leading-relaxed text-slate-600">
@@ -111,8 +113,9 @@ export default function Opiniones() {
                   <img
                     src={o.foto}
                     alt={`Testimonio de ${o.nombre}`}
-                    className="h-12 w-12 rounded-full object-cover"
+                    className="h-12 w-12 rounded-full object-cover ring-2 ring-gold/40"
                     loading="lazy"
+                    decoding="async"
                   />
                   <div>
                     <p className="font-semibold text-navy">
@@ -145,7 +148,7 @@ export default function Opiniones() {
           </p>
           <Link
             to="/contacto"
-            className="mt-8 inline-flex items-center justify-center rounded-full bg-gold px-8 py-4 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
+            className="btn-shine mt-8 inline-flex items-center justify-center rounded-full bg-gold px-8 py-4 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
           >
             Estudiar mi multa gratis
           </Link>

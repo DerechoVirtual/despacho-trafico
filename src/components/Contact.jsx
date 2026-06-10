@@ -10,6 +10,7 @@ export default function Contact() {
     tipoMulta: "",
     descripcion: "",
     rgpd: false,
+    web: "", // honeypot anti-spam
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -46,6 +47,7 @@ export default function Contact() {
         tipoMulta: "",
         descripcion: "",
         rgpd: false,
+        web: "",
       });
     } catch (err) {
       setError(err.message);
@@ -61,13 +63,14 @@ export default function Contact() {
     <section id="contacto" className="bg-cream py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-6">
         {/* Cabecera centrada */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-12" data-reveal>
           <p className="text-xs font-bold tracking-widest text-gold uppercase mb-3">
             PRIMER PASO
           </p>
           <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-navy font-bold mb-5">
             Cuéntanos tu multa
           </h2>
+          <div className="hairline-gold mx-auto mb-5 w-24" />
           <p className="text-navy/70 max-w-xl mx-auto text-base md:text-lg leading-relaxed">
             Rellena el formulario y te decimos sin compromiso si tu sanción
             tiene defensa. Respondemos en 24-48 horas laborables.
@@ -77,7 +80,10 @@ export default function Contact() {
         {/* Layout 2 columnas */}
         <div className="grid lg:grid-cols-[1.4fr_1fr] gap-10 items-start">
           {/* IZQUIERDA — Formulario */}
-          <div className="bg-white border border-black/5 rounded-2xl p-8 shadow-lg">
+          <div
+            className="bg-white border border-black/5 rounded-2xl p-8 shadow-lg ring-1 ring-gold/10"
+            data-reveal="left"
+          >
             <form onSubmit={handleSubmit} noValidate>
               {/* Fila 1: Nombre + Teléfono */}
               <div className="grid sm:grid-cols-2 gap-5 mb-5">
@@ -171,6 +177,20 @@ export default function Contact() {
                 />
               </div>
 
+              {/* Honeypot anti-spam: invisible para humanos */}
+              <div className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+                <label htmlFor="contact-web">No rellenes este campo</label>
+                <input
+                  id="contact-web"
+                  name="web"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={form.web}
+                  onChange={handleChange}
+                />
+              </div>
+
               {/* Checkbox RGPD */}
               <div className="mb-6">
                 <label className="flex items-start gap-3 cursor-pointer">
@@ -211,7 +231,7 @@ export default function Contact() {
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full rounded-xl bg-gold px-6 py-4 font-semibold text-white shadow-md transition hover:bg-gold-dark hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gold/50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                className="btn-shine w-full rounded-xl bg-gold px-6 py-4 font-semibold text-navy-900 shadow-md shadow-gold/30 transition hover:bg-gold-dark hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gold/50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {sending ? "Enviando…" : "Enviar mi consulta gratis"}
               </button>
@@ -219,7 +239,11 @@ export default function Contact() {
           </div>
 
           {/* DERECHA — Aside */}
-          <aside className="bg-navy text-white rounded-2xl p-8 shadow-lg">
+          <aside
+            className="relative overflow-hidden bg-navy text-white rounded-2xl p-8 shadow-lg ring-1 ring-gold/20"
+            data-reveal="right"
+          >
+            <div className="grid-navy" aria-hidden="true" />
             <h3 className="font-display text-2xl font-bold mb-7">Habla con nosotros</h3>
 
             <ul className="space-y-5 mb-8">

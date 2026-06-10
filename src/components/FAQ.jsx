@@ -63,7 +63,13 @@ function FAQItem({ item, index, openIndex, setOpenIndex }) {
   }
 
   return (
-    <div className="mb-3 overflow-hidden rounded-xl border border-black/5 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md">
+    <div
+      className={`mb-3 overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300 hover:shadow-md ${
+        isOpen
+          ? "border-gold/45 shadow-lg shadow-gold/10 ring-1 ring-gold/20"
+          : "border-black/5"
+      }`}
+    >
       <button
         type="button"
         onClick={handleToggle}
@@ -96,13 +102,14 @@ export default function FAQ() {
     <section id="faq" className="bg-cream py-20 md:py-28">
       <div className="mx-auto max-w-3xl px-6">
         {/* Cabecera */}
-        <div className="mb-12 text-center">
+        <div className="mb-12 text-center" data-reveal>
           <p className="mb-3 text-xs font-bold uppercase tracking-widest text-gold-dark">
             DUDAS FRECUENTES
           </p>
           <h2 className="font-display mb-4 text-3xl font-bold text-navy md:text-4xl">
             Preguntas frecuentes
           </h2>
+          <div className="hairline-gold mx-auto mb-5 w-24" />
           <p className="mx-auto max-w-xl text-base text-slate-500 md:text-lg">
             Resolvemos las dudas que más nos plantean antes de recurrir una
             multa.
@@ -110,7 +117,7 @@ export default function FAQ() {
         </div>
 
         {/* Acordeón */}
-        <div role="list">
+        <div role="list" data-reveal>
           {faqs.map((item, index) => (
             <FAQItem
               key={index}
@@ -123,13 +130,13 @@ export default function FAQ() {
         </div>
 
         {/* CTA */}
-        <div className="mt-14 text-center">
+        <div className="mt-14 text-center" data-reveal>
           <p className="mb-6 text-base text-slate-500 md:text-lg">
             ¿Tienes otra duda? Escríbenos y te respondemos sin compromiso.
           </p>
           <a
             href="#contacto"
-            className="inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
+            className="btn-shine inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
           >
             Escríbenos
           </a>

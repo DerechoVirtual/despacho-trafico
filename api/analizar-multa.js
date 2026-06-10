@@ -9,7 +9,13 @@
 // IMPORTANTE: el razonamiento puede tardar 8-15 s; ampliamos el tiempo máximo.
 export const config = { maxDuration: 60 };
 
+import { parseBody, str, rateLimited, rejectMethod, tooMany } from "./_lib/http.js";
+
 const MODEL = "gemini-3.5-flash";
+
+// Imagen del boletín: formatos que Gemini acepta y tope de tamaño (base64).
+const FOTO_MIMES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
+const FOTO_MAX_B64 = 6_000_000; // ≈ 4,5 MB binarios; el cliente ya comprime a mucho menos
 
 const SCHEMA = {
   type: "object",
@@ -110,9 +116,9 @@ function veredictoFallback() {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Método no permitido" });
+  if (rejectMethod(req, res, "POST")) return;
+  if (rateLimited(req, { key: "analizar", limit: 8, windowMs: 60_000 })) {
+    return tooMany(res);
   }
 
   const key = process.env.GEMINI_API_KEY;
@@ -121,17 +127,22 @@ export default async function handler(req, res) {
     return res.status(200).json(veredictoFallback());
   }
 
-  let data = req.body;
-  if (!data || typeof data === "string") {
-    try {
-      data = JSON.parse(data || "{}");
-    } catch {
-      data = {};
-    }
-  }
+  const data = parseBody(req);
 
-  const transcript = data.transcript || [];
-  const foto = data.foto;
+  // Transcript saneado y con tope (viene del cliente).
+  const transcript = (Array.isArray(data.transcript) ? data.transcript : [])
+    .slice(0, 40)
+    .map((t) => ({
+      pregunta: str(t?.pregunta, 300),
+      respuesta: str(t?.respuesta, 1200),
+    }));
+
+  // Foto: solo si trae un formato soportado y un tamaño razonable.
+  let foto = data.foto;
+  if (foto && (!FOTO_MIMES.has(foto.mimeType) || typeof foto.base64 !== "string" || foto.base64.length > FOTO_MAX_B64)) {
+    console.warn("Foto descartada:", foto?.mimeType, foto?.base64?.length);
+    foto = null;
+  }
 
   const parts = [
     {

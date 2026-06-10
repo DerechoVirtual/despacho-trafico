@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { servicios } from "../data/servicios.js";
+import ServiceIcon from "./ServiceIcon.jsx";
 
 const LINKS = [
   { to: "/servicios", label: "Servicios", dropdown: true },
@@ -15,11 +16,29 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [servOpen, setServOpen] = useState(false);
   const closeTimer = useRef(null);
+  const progressRef = useRef(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 10);
+        // Barra de progreso de lectura (transform, sin reflow)
+        const doc = document.documentElement;
+        const max = doc.scrollHeight - window.innerHeight;
+        const p = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+        if (progressRef.current) {
+          progressRef.current.style.transform = `scaleX(${p})`;
+        }
+      });
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   const openServ = () => {
@@ -31,34 +50,35 @@ export default function Navbar() {
   };
 
   const linkClass = ({ isActive }) =>
-    `text-[15px] font-medium transition hover:text-gold-dark ${
-      isActive ? "text-gold-dark" : "text-ink"
+    `nav-link whitespace-nowrap text-[15px] font-medium transition hover:text-gold-dark ${
+      isActive ? "nav-active text-gold-dark" : "text-ink"
     }`;
 
   return (
     <header className="sticky top-0 z-50">
       {/* Barra superior */}
-      <div className="bg-navy-900 text-[13px] text-slate-300">
+      <div className="relative bg-navy-900 text-[13px] text-slate-300">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2">
           <span className="hidden sm:block">
             ⚖️ Despacho de ámbito nacional · Atendemos en toda España
           </span>
           <span className="sm:hidden">⚖️ Toda España</span>
-          <a href="tel:+34900000000" className="font-semibold text-gold hover:text-white">
+          <a href="tel:+34900000000" className="font-semibold text-gold transition hover:text-white">
             📞 900 000 000
           </a>
         </div>
+        <div className="hairline-gold absolute inset-x-0 bottom-0" />
       </div>
 
       {/* Navegación principal */}
       <nav
-        className={`border-b border-black/5 bg-white/95 backdrop-blur transition-shadow ${
-          scrolled ? "shadow-md" : ""
+        className={`glass-nav relative border-b border-black/5 transition-shadow duration-300 ${
+          scrolled ? "shadow-lg shadow-navy/10" : ""
         }`}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link to="/" className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-navy font-display text-xl font-bold text-gold">
+          <Link to="/" className="group flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-navy font-display text-xl font-bold text-gold shadow-md shadow-navy/30 transition-transform duration-300 group-hover:scale-105 group-hover:shadow-gold/30">
               R
             </span>
             <span className="font-display text-xl text-navy">
@@ -66,7 +86,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <div className="hidden items-center gap-7 lg:flex">
+          <div className="hidden items-center gap-3 lg:flex xl:gap-6">
             {LINKS.map((l) =>
               l.dropdown ? (
                 <div
@@ -77,20 +97,30 @@ export default function Navbar() {
                 >
                   <NavLink to={l.to} className={linkClass}>
                     {l.label}
-                    <span className="ml-1 text-xs">▾</span>
+                    <span
+                      className={`ml-1 inline-block text-xs transition-transform duration-300 ${
+                        servOpen ? "rotate-180" : ""
+                      }`}
+                    >
+                      ▾
+                    </span>
                   </NavLink>
                   {servOpen && (
                     <div className="absolute left-1/2 top-full -translate-x-1/2 pt-3">
-                      <div className="w-72 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-2xl">
+                      <div className="menu-pop w-80 overflow-hidden rounded-2xl border border-black/5 bg-white/95 shadow-2xl ring-1 ring-gold/15 backdrop-blur-xl">
+                        <div className="hairline-gold" />
                         {servicios.map((s) => (
                           <Link
                             key={s.slug}
                             to={`/servicios/${s.slug}`}
                             onClick={() => setServOpen(false)}
-                            className="flex items-center justify-between gap-3 border-b border-black/5 px-5 py-3 text-sm text-ink transition last:border-0 hover:bg-cream"
+                            className="group/item flex items-center gap-3 border-b border-black/5 px-5 py-3 text-sm text-ink transition last:border-0 hover:bg-cream"
                           >
-                            <span className="font-medium">{s.cardTitulo}</span>
-                            <span className="text-xs font-semibold text-gold-dark">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gold/12 text-gold-dark transition group-hover/item:bg-gold/25">
+                              <ServiceIcon name={s.icon} className="h-5 w-5" />
+                            </span>
+                            <span className="flex-1 font-medium">{s.cardTitulo}</span>
+                            <span className="rounded-full bg-navy/5 px-2.5 py-1 text-xs font-semibold text-gold-dark">
                               {s.precio}
                             </span>
                           </Link>
@@ -100,7 +130,11 @@ export default function Navbar() {
                   )}
                 </div>
               ) : l.to.startsWith("/#") ? (
-                <Link key={l.to} to={l.to} className="text-[15px] font-medium text-ink transition hover:text-gold-dark">
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className="nav-link whitespace-nowrap text-[15px] font-medium text-ink transition hover:text-gold-dark"
+                >
                   {l.label}
                 </Link>
               ) : (
@@ -111,7 +145,7 @@ export default function Navbar() {
             )}
             <Link
               to="/anti-multaitor"
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 font-semibold text-white transition hover:brightness-110"
+              className="btn-shine inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2.5 font-semibold text-white transition hover:brightness-110"
               style={{
                 backgroundImage: "linear-gradient(135deg,#22d3ee,#8b5cf6)",
                 boxShadow: "0 8px 22px -10px rgba(139,92,246,0.8)",
@@ -123,13 +157,14 @@ export default function Navbar() {
               href="https://proyecto-crm-abogados.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-full border border-navy/25 px-5 py-2.5 font-semibold text-navy transition hover:border-navy hover:bg-navy/5"
+              className="whitespace-nowrap rounded-full border border-navy/25 px-4 py-2.5 font-semibold text-navy transition hover:border-navy hover:bg-navy/5 xl:px-5"
             >
-              Acceso a la plataforma
+              <span className="hidden xl:inline">Acceso a la plataforma</span>
+              <span className="xl:hidden">Plataforma</span>
             </a>
             <Link
               to="/contacto"
-              className="rounded-full bg-navy px-5 py-2.5 font-semibold text-white transition hover:bg-navy-700"
+              className="btn-shine whitespace-nowrap rounded-full bg-navy px-5 py-2.5 font-semibold text-white shadow-md shadow-navy/25 transition hover:bg-navy-700"
             >
               Consulta gratis
             </Link>
@@ -137,16 +172,20 @@ export default function Navbar() {
 
           <button
             onClick={() => setOpen((v) => !v)}
-            className="text-3xl leading-none text-navy lg:hidden"
-            aria-label="Abrir menú"
+            className="text-3xl leading-none text-navy transition-transform duration-200 active:scale-90 lg:hidden"
+            aria-label={open ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={open}
           >
             {open ? "×" : "☰"}
           </button>
         </div>
 
+        {/* Progreso de lectura */}
+        <span ref={progressRef} className="scroll-progress" aria-hidden="true" />
+
         {/* Menú móvil */}
         {open && (
-          <div className="border-t border-black/5 bg-white px-6 py-3 lg:hidden">
+          <div className="menu-pop border-t border-black/5 bg-white/95 px-6 py-3 backdrop-blur-xl lg:hidden">
             <Link
               to="/servicios"
               onClick={() => setOpen(false)}
@@ -159,9 +198,10 @@ export default function Navbar() {
                 key={s.slug}
                 to={`/servicios/${s.slug}`}
                 onClick={() => setOpen(false)}
-                className="block border-b border-black/5 py-2.5 pl-4 text-sm text-slate-600"
+                className="flex items-center justify-between border-b border-black/5 py-2.5 pl-4 text-sm text-slate-600"
               >
-                {s.cardTitulo}
+                <span>{s.cardTitulo}</span>
+                <span className="text-xs font-semibold text-gold-dark">{s.precio}</span>
               </Link>
             ))}
             {LINKS.filter((l) => !l.dropdown).map((l) => (

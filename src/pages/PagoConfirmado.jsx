@@ -64,12 +64,14 @@ export default function PagoConfirmado() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-3">
-            {PASOS.map((p) => (
+            {PASOS.map((p, i) => (
               <div
                 key={p.n}
-                className="rounded-2xl border border-black/5 bg-cream p-7 shadow-sm"
+                className="card-lift rounded-2xl border border-black/5 bg-cream p-7 shadow-sm"
+                data-reveal
+                style={{ "--rd": `${i * 110}ms` }}
               >
-                <span className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gold font-display text-lg font-bold text-navy-900">
+                <span className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gold font-display text-lg font-bold text-navy-900 shadow-md shadow-gold/40">
                   {p.n}
                 </span>
                 <h3 className="font-display text-lg font-bold text-navy">
@@ -87,7 +89,7 @@ export default function PagoConfirmado() {
               href={CRM_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-full bg-gold px-8 py-4 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
+              className="btn-shine pulse-gold inline-flex items-center justify-center rounded-full bg-gold px-8 py-4 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
             >
               Acceder a mi plataforma
             </a>

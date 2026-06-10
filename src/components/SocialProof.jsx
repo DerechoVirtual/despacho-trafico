@@ -1,8 +1,8 @@
-import { useState } from "react";
+import CountUp from "./CountUp.jsx";
 
 const stats = [
-  { number: "+100", label: "expedientes gestionados" },
-  { number: "8", label: "tipos de infracción que cubrimos" },
+  { value: 100, prefix: "+", label: "expedientes gestionados" },
+  { value: 8, label: "tipos de infracción que cubrimos" },
   { number: "Nacional", label: "clientes en toda España" },
   { number: "ICAM 12.345", label: "abogado colegiado" },
 ];
@@ -40,7 +40,7 @@ export default function SocialProof() {
   return (
     <section
       id="casos"
-      className="py-20 md:py-28 text-white"
+      className="relative overflow-hidden py-20 md:py-28 text-white"
       style={{
         backgroundImage:
           "linear-gradient(rgba(15,44,77,.94), rgba(10,31,55,.97)), url('/imagenes/justicia.jpg')",
@@ -48,16 +48,21 @@ export default function SocialProof() {
         backgroundPosition: "center",
       }}
     >
-      <div className="mx-auto max-w-6xl px-6">
+      {/* Capa siglo XXII */}
+      <div className="aurora-navy" aria-hidden="true" />
+      <div className="grid-navy" aria-hidden="true" />
+
+      <div className="relative mx-auto max-w-6xl px-6">
 
         {/* Cabecera centrada */}
-        <div className="text-center mb-14">
+        <div className="text-center mb-14" data-reveal>
           <p className="text-sm font-semibold tracking-widest uppercase text-[#c8a45c] mb-3">
             RESULTADOS REALES
           </p>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-5 leading-tight">
             Casos de éxito
           </h2>
+          <div className="hairline-gold mx-auto mb-5 w-24" />
           <p className="text-slate-200 max-w-2xl mx-auto text-lg leading-relaxed">
             Datos de expedientes reales del despacho. Por respeto a nuestros
             clientes, todos los casos están anonimizados.
@@ -69,10 +74,16 @@ export default function SocialProof() {
           {stats.map((stat, i) => (
             <div
               key={i}
-              className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center"
+              className="card-lift bg-white/5 border border-white/10 rounded-2xl p-6 text-center backdrop-blur-sm"
+              data-reveal
+              style={{ "--rd": `${i * 100}ms` }}
             >
               <p className="font-display text-3xl md:text-4xl font-bold text-[#c8a45c] mb-2 leading-none">
-                {stat.number}
+                {typeof stat.value === "number" ? (
+                  <CountUp value={stat.value} prefix={stat.prefix || ""} suffix={stat.suffix || ""} />
+                ) : (
+                  stat.number
+                )}
               </p>
               <p className="text-slate-300 text-sm leading-snug">{stat.label}</p>
             </div>
@@ -84,7 +95,9 @@ export default function SocialProof() {
           {testimonials.map((t, i) => (
             <div
               key={i}
-              className="bg-white/5 border border-white/10 rounded-2xl p-7 flex flex-col"
+              className="card-lift bg-white/5 border border-white/10 rounded-2xl p-7 flex flex-col backdrop-blur-sm"
+              data-reveal
+              style={{ "--rd": `${i * 120}ms` }}
             >
               <QuoteIcon />
               <blockquote className="flex-1">

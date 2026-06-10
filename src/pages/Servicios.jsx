@@ -26,19 +26,23 @@ export default function Servicios() {
       <section className="bg-cream py-20 md:py-28">
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {servicios.map((s) => (
+            {servicios.map((s, i) => (
               <Link
                 key={s.slug}
                 to={`/servicios/${s.slug}`}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="card-lift group flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm"
+                data-reveal
+                style={{ "--rd": `${(i % 3) * 110}ms` }}
               >
                 <div className="relative h-40 overflow-hidden">
                   <img
                     src={s.imagen}
                     alt={s.titulo}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                   />
-                  <span className="absolute right-3 top-3 rounded-full bg-navy/90 px-3 py-1 text-xs font-semibold text-gold">
+                  <span className="absolute right-3 top-3 rounded-full bg-navy/90 px-3 py-1 text-xs font-semibold text-gold ring-1 ring-gold/30 backdrop-blur-sm">
                     {s.precio}
                   </span>
                 </div>
@@ -65,20 +69,24 @@ export default function Servicios() {
       {/* Tabla de honorarios */}
       <section className="bg-white py-20 md:py-24">
         <div className="mx-auto max-w-3xl px-6">
-          <div className="mb-10 text-center">
+          <div className="mb-10 text-center" data-reveal>
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-gold-dark">
               Transparencia total
             </p>
             <h2 className="font-display text-3xl font-bold text-navy md:text-4xl">
               Honorarios
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-slate-600">
+            <div className="hairline-gold mx-auto my-5 w-24" />
+            <p className="mx-auto max-w-xl text-slate-600">
               Cuotas fijas, sin sorpresas. Sabes lo que pagas antes de empezar.
               Pago al firmar el encargo (honorarios + IVA).
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-black/5 shadow-sm">
+          <div
+            className="overflow-hidden rounded-2xl border border-black/5 shadow-lg ring-1 ring-gold/15"
+            data-reveal
+          >
             <table className="w-full text-left">
               <thead className="bg-navy text-white">
                 <tr>
@@ -117,7 +125,7 @@ export default function Servicios() {
                       {s.comprable ? (
                         <BotonPago
                           slug={s.slug}
-                          className="inline-flex items-center justify-center rounded-full bg-gold px-5 py-2 text-sm font-semibold text-navy-900 shadow shadow-gold/40 transition hover:bg-gold-dark"
+                          className="btn-shine inline-flex items-center justify-center rounded-full bg-gold px-5 py-2 text-sm font-semibold text-navy-900 shadow shadow-gold/40 transition hover:bg-gold-dark"
                         >
                           Pagar
                         </BotonPago>
@@ -140,10 +148,10 @@ export default function Servicios() {
             cantidades llevan IVA aparte.
           </p>
 
-          <div className="mt-10 text-center">
+          <div className="mt-10 text-center" data-reveal>
             <Link
               to="/contacto"
-              className="inline-flex items-center justify-center rounded-full bg-gold px-8 py-4 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
+              className="btn-shine inline-flex items-center justify-center rounded-full bg-gold px-8 py-4 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
             >
               Estudiar mi multa gratis
             </Link>

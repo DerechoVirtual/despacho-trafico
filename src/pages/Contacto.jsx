@@ -41,9 +41,14 @@ export default function Contacto() {
       {/* Cómo funciona */}
       <section className="bg-white py-16">
         <div className="mx-auto grid max-w-5xl gap-6 px-6 sm:grid-cols-3">
-          {pasos.map((p) => (
-            <div key={p.n} className="rounded-2xl border border-black/5 bg-cream p-6 text-center">
-              <span className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-navy font-display text-lg font-bold text-gold">
+          {pasos.map((p, i) => (
+            <div
+              key={p.n}
+              className="card-lift rounded-2xl border border-black/5 bg-cream p-6 text-center"
+              data-reveal
+              style={{ "--rd": `${i * 110}ms` }}
+            >
+              <span className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-navy font-display text-lg font-bold text-gold shadow-md shadow-gold/25 ring-1 ring-gold/30">
                 {p.n}
               </span>
               <h3 className="font-semibold text-navy">{p.t}</h3>

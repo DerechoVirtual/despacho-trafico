@@ -6,6 +6,17 @@
 // Variables de entorno (ya configuradas en Vercel):
 //   GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, NOTIFY_EMAIL, FROM_EMAIL
 
+import {
+  parseBody,
+  str,
+  isEmail,
+  isPhone,
+  rateLimited,
+  rejectMethod,
+  tooMany,
+  isSpamBot,
+} from "./_lib/http.js";
+
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
 
@@ -48,31 +59,53 @@ async function getAccessToken(env) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ ok: false, error: "Método no permitido" });
+  if (rejectMethod(req, res, "POST")) return;
+  if (rateLimited(req, { key: "agendar", limit: 5, windowMs: 60_000 })) {
+    return tooMany(res);
   }
 
-  let data = req.body;
-  if (!data || typeof data === "string") {
-    try {
-      data = JSON.parse(data || "{}");
-    } catch {
-      data = {};
-    }
-  }
+  const data = parseBody(req);
+  if (isSpamBot(data)) return res.status(200).json({ ok: true });
 
-  const nombre = (data.nombre || "").trim();
-  const telefono = (data.telefono || "").trim();
-  const email = (data.email || "").trim();
-  const franja = (data.franja || "Indiferente").trim();
-  const verdict = data.verdict || {};
-  const transcript = Array.isArray(data.transcript) ? data.transcript : [];
+  const nombre = str(data.nombre, 120);
+  const telefono = str(data.telefono, 24);
+  const email = str(data.email, 160);
+  const franja = str(data.franja, 60) || "Indiferente";
+
+  // Veredicto y respuestas: saneados y con topes de tamaño (vienen del cliente).
+  const v = data.verdict && typeof data.verdict === "object" ? data.verdict : {};
+  const verdict = {
+    probabilidad: typeof v.probabilidad === "number" ? v.probabilidad : undefined,
+    via: str(v.via, 40),
+    titular: str(v.titular, 300),
+    resumen: str(v.resumen, 2000),
+    plazo: str(v.plazo, 400),
+    motivos: (Array.isArray(v.motivos) ? v.motivos : []).slice(0, 8).map((m) => ({
+      titulo: str(m?.titulo, 160),
+      explicacion: str(m?.explicacion, 600),
+    })),
+  };
+  const transcript = (Array.isArray(data.transcript) ? data.transcript : [])
+    .slice(0, 40)
+    .map((t) => ({
+      pregunta: str(t?.pregunta, 300),
+      respuesta: str(t?.respuesta, 800),
+    }));
 
   if (!nombre || !telefono) {
     return res
       .status(400)
       .json({ ok: false, error: "Faltan datos obligatorios (nombre y teléfono)." });
+  }
+  if (!isPhone(telefono)) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "El teléfono no parece válido. Revísalo, por favor." });
+  }
+  if (email && !isEmail(email)) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "El email no parece válido. Revísalo, por favor." });
   }
 
   const env = process.env;

@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 export default function AntiMultaitorBanner() {
   return (
     <section className="bg-cream py-16 md:py-20">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="relative overflow-hidden rounded-3xl bg-[#0b1020] px-7 py-12 shadow-2xl md:px-14 md:py-16">
+      <div className="mx-auto max-w-6xl px-6" data-reveal="zoom">
+        <div className="card-lift relative overflow-hidden rounded-3xl border border-transparent bg-[#0b1020] px-7 py-12 shadow-2xl md:px-14 md:py-16">
           {/* Glow / malla decorativa */}
           <div
             className="pointer-events-none absolute inset-0 opacity-70"
@@ -58,7 +58,7 @@ export default function AntiMultaitorBanner() {
               <div className="mt-7 flex flex-wrap items-center gap-4">
                 <Link
                   to="/anti-multaitor"
-                  className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-bold text-white transition hover:brightness-110"
+                  className="btn-shine inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-bold text-white transition hover:brightness-110"
                   style={{
                     backgroundImage: "linear-gradient(135deg,#22d3ee,#8b5cf6)",
                     boxShadow: "0 14px 40px -12px rgba(139,92,246,0.7)",

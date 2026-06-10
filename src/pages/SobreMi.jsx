@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import PageHero from "../components/PageHero.jsx";
+import CountUp from "../components/CountUp.jsx";
 import { useSeo } from "../lib/seo.js";
 
 const hitos = [
@@ -48,9 +49,9 @@ const hitos = [
 ];
 
 const stats = [
-  { n: "+100", l: "expedientes gestionados" },
-  { n: "15", l: "años ejerciendo" },
-  { n: "34.700 €", l: "en sanciones gestionadas" },
+  { value: 100, prefix: "+", l: "expedientes gestionados" },
+  { value: 15, l: "años ejerciendo" },
+  { value: 34700, suffix: " €", l: "en sanciones gestionadas" },
   { n: "ICAM 12.345", l: "abogado colegiado" },
 ];
 
@@ -75,14 +76,18 @@ export default function SobreMi() {
       {/* Intro con retrato */}
       <section className="bg-white py-20 md:py-28">
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-2">
-          <div className="relative">
-            <img
-              src="/imagenes/abogado.jpg"
-              alt="Carlos Rivero García, abogado de tráfico"
-              className="w-full rounded-2xl object-cover shadow-xl"
-            />
+          <div className="relative" data-reveal="left">
+            <div className="frame-gold shadow-xl">
+              <img
+                src="/imagenes/abogado.jpg"
+                alt="Carlos Rivero García, abogado de tráfico"
+                loading="lazy"
+                decoding="async"
+                className="w-full rounded-2xl object-cover"
+              />
+            </div>
             <div
-              className="absolute bottom-5 left-5 flex items-center gap-3 rounded-xl bg-navy px-4 py-3 shadow-2xl"
+              className="float-y absolute bottom-5 left-5 flex items-center gap-3 rounded-xl bg-navy px-4 py-3 shadow-2xl ring-1 ring-gold/40"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -94,7 +99,7 @@ export default function SobreMi() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-5" data-reveal="right">
             <p className="text-xs font-bold uppercase tracking-widest text-gold-dark">
               Mi historia
             </p>
@@ -125,11 +130,24 @@ export default function SobreMi() {
       </section>
 
       {/* Stats */}
-      <section className="bg-navy py-16 text-white">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-6 lg:grid-cols-4">
-          {stats.map((s) => (
-            <div key={s.l} className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
-              <p className="font-display text-3xl font-bold text-gold md:text-4xl">{s.n}</p>
+      <section className="relative overflow-hidden bg-navy py-16 text-white">
+        <div className="aurora-navy" aria-hidden="true" />
+        <div className="grid-navy" aria-hidden="true" />
+        <div className="relative mx-auto grid max-w-6xl grid-cols-2 gap-6 px-6 lg:grid-cols-4">
+          {stats.map((s, i) => (
+            <div
+              key={s.l}
+              className="card-lift rounded-2xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur-sm"
+              data-reveal
+              style={{ "--rd": `${i * 100}ms` }}
+            >
+              <p className="font-display text-3xl font-bold text-gold md:text-4xl">
+                {typeof s.value === "number" ? (
+                  <CountUp value={s.value} prefix={s.prefix || ""} suffix={s.suffix || ""} />
+                ) : (
+                  s.n
+                )}
+              </p>
               <p className="mt-2 text-sm text-slate-300">{s.l}</p>
             </div>
           ))}
@@ -139,7 +157,7 @@ export default function SobreMi() {
       {/* Lucha contra el Estado */}
       <section className="bg-white py-20 md:py-28">
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-2">
-          <div className="order-2 flex flex-col gap-5 lg:order-1">
+          <div className="order-2 flex flex-col gap-5 lg:order-1" data-reveal="left">
             <p className="text-xs font-bold uppercase tracking-widest text-gold-dark">
               Mi forma de trabajar
             </p>
@@ -175,12 +193,16 @@ export default function SobreMi() {
               último recurso.
             </p>
           </div>
-          <div className="order-1 lg:order-2">
-            <img
-              src="/imagenes/sobre-mi-carlos.jpg"
-              alt="Carlos Rivero trabajando en un expediente de tráfico"
-              className="w-full rounded-2xl object-cover shadow-xl"
-            />
+          <div className="order-1 lg:order-2" data-reveal="right">
+            <div className="frame-gold shadow-xl">
+              <img
+                src="/imagenes/sobre-mi-carlos.jpg"
+                alt="Carlos Rivero trabajando en un expediente de tráfico"
+                loading="lazy"
+                decoding="async"
+                className="w-full rounded-2xl object-cover"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -198,9 +220,14 @@ export default function SobreMi() {
           </div>
 
           <ol className="relative border-l-2 border-gold/40">
-            {hitos.map((h) => (
-              <li key={h.year} className="mb-10 ml-6 last:mb-0">
-                <span className="absolute -left-[11px] flex h-5 w-5 items-center justify-center rounded-full bg-gold ring-4 ring-cream" />
+            {hitos.map((h, i) => (
+              <li
+                key={h.year}
+                className="mb-10 ml-6 last:mb-0"
+                data-reveal
+                style={{ "--rd": `${Math.min(i, 3) * 80}ms` }}
+              >
+                <span className="absolute -left-[11px] flex h-5 w-5 items-center justify-center rounded-full bg-gold shadow-md shadow-gold/50 ring-4 ring-cream" />
                 <span className="text-sm font-bold text-gold-dark">{h.year}</span>
                 <h3 className="mt-1 font-display text-xl font-bold text-navy">
                   {h.titulo}

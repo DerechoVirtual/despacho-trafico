@@ -97,103 +97,66 @@ const steps = [
 
 export default function Process() {
   return (
-    <section id="proceso" className="py-20 md:py-28" style={{ backgroundColor: "#ffffff" }}>
+    <section id="proceso" className="bg-white py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-6">
         {/* Cabecera centrada */}
-        <div className="mb-14 text-center md:mb-18">
-          <p
-            className="mb-3 text-xs font-bold uppercase tracking-widest"
-            style={{ color: "#C9A84C" }}
-          >
+        <div className="mb-14 text-center md:mb-18" data-reveal>
+          <p className="mb-3 text-xs font-bold uppercase tracking-widest text-gold-dark">
             ASÍ DE FÁCIL
           </p>
-          <h2
-            className="mb-4 text-3xl font-display font-bold md:text-4xl lg:text-5xl"
-            style={{ color: "#0F1F3D" }}
-          >
+          <h2 className="mb-4 text-3xl font-display font-bold text-navy md:text-4xl lg:text-5xl">
             Cómo trabajamos
           </h2>
-          <p
-            className="mx-auto max-w-2xl text-lg leading-relaxed"
-            style={{ color: "#475569" }}
-          >
+          <div className="hairline-gold mx-auto mb-5 w-24" />
+          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600">
             Tú no te desplazas: lo hacemos todo{" "}
-            <span className="font-semibold" style={{ color: "#0F1F3D" }}>
-              online
-            </span>
-            . En cuatro pasos sencillos pasamos de tu multa a tu defensa.
+            <span className="font-semibold text-navy">online</span>. En cuatro
+            pasos sencillos pasamos de tu multa a tu defensa.
           </p>
         </div>
 
         {/* Grid de pasos */}
         <div className="relative grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
-          {/* Línea conectora horizontal (solo lg) */}
+          {/* Línea conectora horizontal animada (solo lg) */}
           <div
-            className="absolute inset-x-0 top-14 hidden h-px lg:block"
+            className="process-line absolute inset-x-0 top-14 z-0 hidden h-px lg:block"
             aria-hidden="true"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent 3%, #C9A84C44 20%, #C9A84C44 80%, transparent 97%)",
-              zIndex: 0,
-            }}
           />
 
           {steps.map((step, index) => (
             <div
               key={step.number}
-              className="relative flex flex-col items-start rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-              style={{
-                backgroundColor: "#F8F6F0",
-                border: "1px solid #E8E2D4",
-                zIndex: 1,
-              }}
+              className="card-lift relative z-10 flex flex-col items-start rounded-2xl border border-[#E8E2D4] bg-cream p-6"
+              data-reveal
+              style={{ "--rd": `${index * 120}ms` }}
             >
               {/* Número grande dorado */}
               <span
-                className="mb-1 block select-none font-display text-5xl font-extrabold leading-none opacity-25"
-                style={{ color: "#C9A84C" }}
+                className="mb-1 block select-none font-display text-5xl font-extrabold leading-none text-gold opacity-25"
                 aria-hidden="true"
               >
                 {step.number}
               </span>
 
               {/* Círculo con icono */}
-              <div
-                className="mb-4 flex h-14 w-14 items-center justify-center rounded-full"
-                style={{
-                  backgroundColor: "#0F1F3D",
-                  color: "#C9A84C",
-                  boxShadow: "0 4px 14px 0 rgba(201,168,76,0.25)",
-                }}
-              >
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-navy text-gold shadow-lg shadow-gold/25 ring-1 ring-gold/30">
                 {step.icon}
               </div>
 
               {/* Título */}
-              <h3
-                className="mb-2 text-lg font-semibold leading-snug"
-                style={{ color: "#0F1F3D" }}
-              >
+              <h3 className="mb-2 text-lg font-semibold leading-snug text-navy">
                 {step.title}
               </h3>
 
               {/* Descripción */}
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: "#64748b" }}
-              >
+              <p className="text-sm leading-relaxed text-slate-500">
                 {step.description}
               </p>
 
               {/* Conector flecha entre tarjetas (sm, 2 col) — decorativo */}
               {index < steps.length - 1 && (
                 <span
-                  className="absolute -right-3 top-14 hidden sm:flex lg:hidden z-10 h-6 w-6 items-center justify-center rounded-full text-xs"
-                  style={{
-                    backgroundColor: "#C9A84C",
-                    color: "#0F1F3D",
-                    boxShadow: "0 2px 6px rgba(201,168,76,0.4)",
-                  }}
+                  className="absolute -right-3 top-14 z-10 hidden h-6 w-6 items-center justify-center rounded-full bg-gold text-xs text-navy shadow-md shadow-gold/40 sm:flex lg:hidden"
                   aria-hidden="true"
                 >
                   <svg
@@ -215,21 +178,10 @@ export default function Process() {
         </div>
 
         {/* CTA centrado */}
-        <div className="mt-14 flex justify-center md:mt-16">
+        <div className="mt-14 flex justify-center md:mt-16" data-reveal>
           <a
             href="#contacto"
-            className="inline-flex items-center justify-center rounded-full px-7 py-3.5 font-semibold shadow-lg transition hover:-translate-y-0.5"
-            style={{
-              backgroundColor: "#C9A84C",
-              color: "#0F1F3D",
-              boxShadow: "0 8px 24px rgba(201,168,76,0.40)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#b8973f";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#C9A84C";
-            }}
+            className="btn-shine inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

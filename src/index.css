@@ -6,6 +6,7 @@
   --color-navy-900: #0a1f37;
   --color-gold: #c8a45c;
   --color-gold-dark: #b08d44;
+  --color-gold-light: #e6cf9a;
   --color-cream: #f7f4ee;
   --color-ink: #1d2733;
 
@@ -21,25 +22,324 @@ body {
   font-family: var(--font-sans);
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Animaciones de entrada al hacer scroll */
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Selección de texto con la marca */
+::selection {
+  background: rgba(200, 164, 92, 0.35);
+  color: #0a1f37;
 }
 
-.reveal {
+/* Scrollbar premium (WebKit + Firefox) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(176, 141, 68, 0.55) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f1ede4;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c8a45c, #b08d44);
+  border-radius: 999px;
+  border: 2px solid #f7f4ee;
+}
+
+/* Anillo de foco accesible y coherente con la marca */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid rgba(200, 164, 92, 0.85);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ============================================================
+   SISTEMA DE REVELADO AL SCROLL  (data-reveal)
+   - data-reveal          → fade + subida
+   - data-reveal="left"   → entra desde la izquierda
+   - data-reveal="right"  → entra desde la derecha
+   - data-reveal="zoom"   → escala suave
+   - style="--rd: 120ms"  → retardo en cascada
+   ============================================================ */
+[data-reveal] {
   opacity: 0;
 }
+[data-reveal].in-view {
+  animation: rv-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--rd, 0ms);
+}
+[data-reveal="left"].in-view {
+  animation-name: rv-left;
+}
+[data-reveal="right"].in-view {
+  animation-name: rv-right;
+}
+[data-reveal="zoom"].in-view {
+  animation-name: rv-zoom;
+}
+
+@keyframes rv-up {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes rv-left {
+  from { opacity: 0; transform: translateX(-32px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes rv-right {
+  from { opacity: 0; transform: translateX(32px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes rv-zoom {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Compatibilidad con el patrón antiguo */
+.reveal { opacity: 0; }
 .reveal.in-view {
-  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: rv-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Modo a prueba de fallos: si el entorno no ejecuta IO/animaciones
+   (webviews raros, bots), se muestra todo sin depender de ellas. */
+html.reveal-all [data-reveal],
+html.reveal-all .reveal,
+html.reveal-all .hero-enter {
+  opacity: 1 !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Entrada del hero (al cargar, sin observer) */
+.hero-enter {
+  opacity: 0;
+  animation: rv-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--rd, 0ms);
+}
+
+/* ============================================================
+   CAPA "SIGLO XXII" — utilidades premium de la marca
+   ============================================================ */
+
+/* Texto con degradado dorado */
+.text-gold-grad {
+  background: linear-gradient(100deg, #e6cf9a 0%, #c8a45c 45%, #b08d44 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Navbar de cristal */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+}
+
+/* Tarjeta de cristal clara (formularios sobre foto) */
+.glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+/* Tarjeta con elevación + halo dorado al pasar el ratón */
+.card-lift {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.card-lift:hover {
+  transform: translateY(-6px);
+  border-color: rgba(200, 164, 92, 0.55) !important;
+  box-shadow:
+    0 1px 2px rgba(10, 31, 55, 0.05),
+    0 24px 48px -18px rgba(10, 31, 55, 0.22),
+    0 0 0 1px rgba(200, 164, 92, 0.22),
+    0 0 36px -10px rgba(200, 164, 92, 0.4);
+}
+
+/* Botón con barrido de brillo */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  inset: -150% auto -150% -60%;
+  width: 38%;
+  transform: skewX(-22deg) translateX(-180%);
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+.btn-shine:hover::after {
+  transform: skewX(-22deg) translateX(420%);
+}
+
+/* Aurora dorada/azulada para secciones oscuras (hero, casos, CTA) */
+.aurora-navy {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.aurora-navy::before,
+.aurora-navy::after {
+  content: "";
+  position: absolute;
+  width: 55rem;
+  height: 38rem;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.5;
+  will-change: transform;
+}
+.aurora-navy::before {
+  top: -16rem;
+  right: -14rem;
+  background: radial-gradient(closest-side, rgba(200, 164, 92, 0.34), transparent 70%);
+  animation: aurora-a 16s ease-in-out infinite alternate;
+}
+.aurora-navy::after {
+  bottom: -18rem;
+  left: -16rem;
+  background: radial-gradient(closest-side, rgba(38, 99, 168, 0.4), transparent 70%);
+  animation: aurora-b 19s ease-in-out infinite alternate;
+}
+@keyframes aurora-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-7rem, 5rem, 0) scale(1.15); }
+}
+@keyframes aurora-b {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(7rem, -4rem, 0) scale(1.12); }
+}
+
+/* Retícula fina para fondos navy (eco sutil del lenguaje tech) */
+.grid-navy {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(200, 164, 92, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 164, 92, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 50% 35%, #000 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 35%, #000 0%, transparent 75%);
+}
+
+/* Hairline dorado (separadores de lujo) */
+.hairline-gold {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200, 164, 92, 0.65), transparent);
+}
+
+/* Barra de progreso de lectura (navbar) */
+.scroll-progress {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  width: 100%;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, #b08d44, #e6cf9a, #c8a45c);
+  box-shadow: 0 0 12px rgba(200, 164, 92, 0.55);
+  z-index: 5;
+}
+
+/* Subrayado animado de los enlaces de navegación */
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: -6px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #c8a45c, #e6cf9a);
+  transition: right 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-link:hover::after,
+.nav-link.nav-active::after {
+  right: 0;
+}
+
+/* Despliegue del menú (dropdown y móvil) */
+.menu-pop {
+  transform-origin: top center;
+  animation: menu-pop 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes menu-pop {
+  from { opacity: 0; transform: translateY(-8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Flotación suave (badges, emblemas) */
+.float-y { animation: float-y 6s ease-in-out infinite; }
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Pulso de halo dorado (CTA destacados) */
+.pulse-gold { animation: pulse-gold 3.2s ease-in-out infinite; }
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 8px 24px -8px rgba(200, 164, 92, 0.55); }
+  50% { box-shadow: 0 8px 34px -6px rgba(200, 164, 92, 0.85); }
+}
+
+/* Imagen con marco degradado dorado */
+.frame-gold {
+  position: relative;
+  border-radius: 1.25rem;
+  padding: 1px;
+  background: linear-gradient(140deg, rgba(200, 164, 92, 0.65), rgba(200, 164, 92, 0.08) 40%, rgba(200, 164, 92, 0.5));
+}
+.frame-gold > img {
+  display: block;
+  width: 100%;
+  border-radius: calc(1.25rem - 1px);
+}
+
+/* Línea conectora animada del proceso */
+.process-line {
+  background: linear-gradient(90deg, transparent 3%, rgba(200, 164, 92, 0.45) 20%, rgba(200, 164, 92, 0.45) 80%, transparent 97%);
+  background-size: 200% 100%;
+  animation: process-flow 6s linear infinite;
+}
+@keyframes process-flow {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* Accesibilidad: sin movimiento si el usuario lo pide */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  [data-reveal],
+  .reveal,
+  .hero-enter { opacity: 1 !important; animation: none !important; transform: none !important; }
+  .aurora-navy::before,
+  .aurora-navy::after,
+  .float-y,
+  .pulse-gold,
+  .process-line,
+  .btn-shine::after { animation: none !important; transition: none !important; }
 }
 
 /* ============================================================

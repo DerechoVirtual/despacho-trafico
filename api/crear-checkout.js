@@ -4,8 +4,24 @@
 // Variables de entorno (Vercel): STRIPE_API_KEY
 
 import { getServicio, TAX_RATE } from "./_lib/servicios.js";
+import { parseBody, str, rateLimited, rejectMethod, tooMany } from "./_lib/http.js";
 
 const API = "https://api.stripe.com/v1";
+
+// Solo construimos las URLs de retorno sobre hosts nuestros; ante cualquier
+// otra cosa (cabecera Host manipulada) caemos al dominio canónico.
+const BASE_CANONICA = "https://despachotrafico.org";
+function baseSegura(req) {
+  const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0];
+  const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
+  const valido =
+    host === "despachotrafico.org" ||
+    host === "www.despachotrafico.org" ||
+    host.endsWith(".vercel.app") ||
+    host.startsWith("localhost:") ||
+    host === "localhost";
+  return valido ? `${proto}://${host}` : BASE_CANONICA;
+}
 
 function form(params) {
   const body = new URLSearchParams();
@@ -20,25 +36,20 @@ function form(params) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ ok: false, error: "Método no permitido" });
+  if (rejectMethod(req, res, "POST")) return;
+  if (rateLimited(req, { key: "checkout", limit: 10, windowMs: 60_000 })) {
+    return tooMany(res);
   }
 
-  let data = req.body;
-  if (!data || typeof data === "string") {
-    try { data = JSON.parse(data || "{}"); } catch { data = {}; }
-  }
-  const slug = (data.slug || "").trim();
+  const data = parseBody(req);
+  const slug = str(data.slug, 60);
   const servicio = getServicio(slug);
   if (!servicio) return res.status(400).json({ ok: false, error: "Servicio no válido" });
 
   const key = process.env.STRIPE_API_KEY;
   if (!key) return res.status(500).json({ ok: false, error: "Pago no configurado" });
 
-  const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0];
-  const host = req.headers["x-forwarded-host"] || req.headers.host;
-  const base = `${proto}://${host}`;
+  const base = baseSegura(req);
 
   const params = {
     mode: "payment",

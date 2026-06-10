@@ -36,15 +36,19 @@ export default function InfractionTypes() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* LEFT — imagen */}
-          <div className="relative">
-            <img
-              src="/imagenes/multa.jpg"
-              alt="Agente de tráfico tramitando una multa"
-              className="w-full rounded-2xl shadow-xl object-cover aspect-[4/3] lg:aspect-[3/4]"
-            />
+          <div className="relative" data-reveal="left">
+            <div className="frame-gold shadow-xl">
+              <img
+                src="/imagenes/multa.jpg"
+                alt="Agente de tráfico tramitando una multa"
+                loading="lazy"
+                decoding="async"
+                className="w-full rounded-2xl object-cover aspect-[4/3] lg:aspect-[3/4]"
+              />
+            </div>
             {/* Decorative accent */}
             <div
-              className="absolute -bottom-4 -left-4 w-24 h-24 rounded-2xl bg-gold/20 -z-10"
+              className="absolute -bottom-4 -left-4 w-24 h-24 rounded-2xl bg-gold/20 -z-10 float-y"
               aria-hidden="true"
             />
             <div
@@ -54,7 +58,7 @@ export default function InfractionTypes() {
           </div>
 
           {/* RIGHT — contenido */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6" data-reveal="right">
             {/* Eyebrow */}
             <p className="text-xs font-semibold tracking-[0.18em] uppercase text-gold">
               ¿Qué te ha pasado?
@@ -79,7 +83,7 @@ export default function InfractionTypes() {
               {infractions.map((label) => (
                 <span
                   key={label}
-                  className="inline-flex items-center gap-2 bg-white border border-black/5 rounded-full px-4 py-2 text-sm font-medium text-navy shadow-sm"
+                  className="inline-flex items-center gap-2 bg-white border border-black/5 rounded-full px-4 py-2 text-sm font-medium text-navy shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-md hover:shadow-gold/20"
                 >
                   <GoldDot />
                   {label}
@@ -95,7 +99,7 @@ export default function InfractionTypes() {
               <div>
                 <a
                   href="#contacto"
-                  className="inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
+                  className="btn-shine inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
                 >
                   Cuéntanos tu multa
                   <svg

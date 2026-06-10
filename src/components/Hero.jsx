@@ -5,7 +5,7 @@ export default function Hero() {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ nombre: "", telefono: "", tipo: "" });
+  const [form, setForm] = useState({ nombre: "", telefono: "", tipo: "", web: "" });
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -21,6 +21,7 @@ export default function Hero() {
         telefono: form.telefono,
         tipoMulta: form.tipo,
         descripcion: "(Consulta rápida desde el formulario de inicio)",
+        web: form.web, // honeypot anti-spam (los humanos no lo ven)
       });
       setSubmitted(true);
     } catch (err) {
@@ -39,26 +40,36 @@ export default function Hero() {
           "linear-gradient(90deg, rgba(15,44,77,.94) 0%, rgba(15,44,77,.72) 45%, rgba(15,44,77,.30) 100%), url('/imagenes/hero.jpg')",
       }}
     >
+      {/* Capa siglo XXII: aurora + retícula fina sobre la foto */}
+      <div className="aurora-navy" aria-hidden="true" />
+      <div className="grid-navy" aria-hidden="true" />
+
       {/* Contenido principal */}
-      <div className="mx-auto max-w-6xl px-6 pt-24 pb-12 flex-1 flex items-center w-full">
+      <div className="relative mx-auto max-w-6xl px-6 pt-24 pb-12 flex-1 flex items-center w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center w-full">
           {/* Columna izquierda: copy */}
           <div className="flex flex-col gap-6">
             {/* Eyebrow pill */}
-            <div className="inline-flex items-center self-start">
-              <span className="rounded-full border border-gold/70 px-4 py-1.5 text-xs font-semibold tracking-widest text-gold uppercase">
+            <div className="hero-enter inline-flex items-center self-start">
+              <span className="rounded-full border border-gold/70 bg-navy-900/30 px-4 py-1.5 text-xs font-semibold tracking-widest text-gold uppercase backdrop-blur-sm">
                 Especialistas en Derecho de Tráfico
               </span>
             </div>
 
             {/* H1 */}
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+            <h1
+              className="hero-enter font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight"
+              style={{ "--rd": "120ms" }}
+            >
               ¿Te han multado? Recurre tu sanción y{" "}
-              <span className="text-gold">protege tus puntos.</span>
+              <span className="text-gold-grad">protege tus puntos.</span>
             </h1>
 
             {/* Subtítulo */}
-            <p className="text-white/80 text-lg leading-relaxed max-w-xl">
+            <p
+              className="hero-enter text-white/80 text-lg leading-relaxed max-w-xl"
+              style={{ "--rd": "240ms" }}
+            >
               Estudiamos tu multa <strong className="text-white">GRATIS</strong> y
               te decimos con total honestidad si tiene recurso. Si lo tiene,
               peleamos por ti hasta el final. Sin tecnicismos, sin
@@ -66,23 +77,26 @@ export default function Hero() {
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-wrap gap-4 mt-2">
+            <div className="hero-enter flex flex-wrap gap-4 mt-2" style={{ "--rd": "360ms" }}>
               <a
                 href="#contacto"
-                className="inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
+                className="btn-shine pulse-gold inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
               >
                 Estudia mi multa gratis
               </a>
               <a
                 href="#proceso"
-                className="inline-flex items-center justify-center rounded-full border-2 border-white/60 px-7 py-3.5 font-semibold text-white transition hover:bg-white/10"
+                className="inline-flex items-center justify-center rounded-full border-2 border-white/60 px-7 py-3.5 font-semibold text-white backdrop-blur-sm transition hover:bg-white/10"
               >
                 Ver cómo trabajamos
               </a>
             </div>
 
             {/* Fila de confianza */}
-            <div className="mt-6 pt-6 border-t border-white/15 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+            <div
+              className="hero-enter mt-6 pt-6 border-t border-white/15 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8"
+              style={{ "--rd": "480ms" }}
+            >
               {/* Item 1 */}
               <div className="flex items-center gap-2 text-white/70 text-sm">
                 <svg
@@ -147,7 +161,10 @@ export default function Hero() {
 
           {/* Columna derecha: tarjeta formulario */}
           <div className="flex justify-center lg:justify-end">
-            <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8">
+            <div
+              className="hero-enter glass-card w-full max-w-sm rounded-2xl p-8 shadow-2xl ring-1 ring-gold/25"
+              style={{ "--rd": "300ms" }}
+            >
               {submitted ? (
                 <div className="flex flex-col items-center gap-4 py-6 text-center">
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
@@ -249,6 +266,19 @@ export default function Hero() {
                         <option value="otra">Otra</option>
                       </select>
                     </div>
+                    {/* Honeypot anti-spam: invisible para humanos */}
+                    <div className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+                      <label htmlFor="hero-web">No rellenes este campo</label>
+                      <input
+                        id="hero-web"
+                        name="web"
+                        type="text"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={form.web}
+                        onChange={handleChange}
+                      />
+                    </div>
                     {error && (
                       <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
                         {error}
@@ -258,7 +288,7 @@ export default function Hero() {
                     <button
                       type="submit"
                       disabled={sending}
-                      className="inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark mt-2 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="btn-shine inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark mt-2 disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       {sending ? "Enviando…" : "Quiero que estudien mi multa"}
                     </button>
@@ -274,7 +304,7 @@ export default function Hero() {
       </div>
 
       {/* Franja de urgencia */}
-      <div className="w-full bg-gold/95 backdrop-blur-sm">
+      <div className="relative w-full bg-gold/95 backdrop-blur-sm">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-center gap-3 text-navy-900">
           <svg
             xmlns="http://www.w3.org/2000/svg"

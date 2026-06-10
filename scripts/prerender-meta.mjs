@@ -149,12 +149,15 @@ async function fullRender(routes, base) {
         r.continue();
       });
       await page.goto(origin + route.path, { waitUntil: "load", timeout: 30000 });
+      // Con rutas lazy (React.lazy) hay que esperar al contenido real, no al
+      // spinner del Suspense (.animate-spin), o capturaríamos el loader.
       await page
         .waitForFunction(
-          'document.getElementById("root") && document.getElementById("root").childElementCount > 0',
+          '(() => { const r = document.getElementById("root"); return r && r.childElementCount > 0 && !r.querySelector(".animate-spin"); })()',
           { timeout: 15000 }
         )
         .catch(() => {});
+      await new Promise((r) => setTimeout(r, 350));
       let html = await page.content();
       if (!/<!DOCTYPE/i.test(html)) html = "<!DOCTYPE html>\n" + html;
       const outDir = join(DIST, route.path);

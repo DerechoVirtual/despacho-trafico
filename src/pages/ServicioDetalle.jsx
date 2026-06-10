@@ -70,7 +70,7 @@ export default function ServicioDetalle() {
             {s.comprable && (
               <BotonPago
                 slug={s.slug}
-                className="inline-flex items-center justify-center rounded-full bg-gold px-7 py-3 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
+                className="btn-shine pulse-gold inline-flex items-center justify-center rounded-full bg-gold px-7 py-3 font-semibold text-navy-900 shadow-lg shadow-gold/40 transition hover:-translate-y-0.5 hover:bg-gold-dark"
               >
                 Contratar y pagar online · {s.precio}
               </BotonPago>
@@ -92,10 +92,11 @@ export default function ServicioDetalle() {
       {/* Contenido principal */}
       <section className="bg-white py-16 md:py-20">
         <div className="mx-auto grid max-w-6xl gap-12 px-6 lg:grid-cols-[1.5fr_1fr]">
-          <div>
+          <div data-reveal="left">
             <h2 className="font-display text-2xl font-bold text-navy md:text-3xl">
               En qué consiste
             </h2>
+            <div className="hairline-gold my-5 w-24" />
             <p className="mt-4 leading-relaxed text-slate-600">{s.detalle}</p>
 
             <h3 className="mt-10 font-display text-xl font-bold text-navy">
@@ -112,7 +113,10 @@ export default function ServicioDetalle() {
           </div>
 
           {/* Aside: qué incluye */}
-          <aside className="h-fit rounded-2xl border border-black/5 bg-cream p-7 shadow-sm">
+          <aside
+            className="h-fit rounded-2xl border border-black/5 bg-cream p-7 shadow-md ring-1 ring-gold/15"
+            data-reveal="right"
+          >
             <h3 className="font-display text-xl font-bold text-navy">
               Qué incluye el servicio
             </h3>
@@ -139,15 +143,17 @@ export default function ServicioDetalle() {
       {/* Otros servicios */}
       <section className="bg-cream py-16 md:py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="mb-8 text-center font-display text-2xl font-bold text-navy md:text-3xl">
+          <h2 className="mb-8 text-center font-display text-2xl font-bold text-navy md:text-3xl" data-reveal>
             Otros servicios que te pueden interesar
           </h2>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {otros.map((o) => (
+            {otros.map((o, i) => (
               <Link
                 key={o.slug}
                 to={`/servicios/${o.slug}`}
-                className="group flex flex-col gap-3 rounded-2xl border border-black/5 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                className="card-lift group flex flex-col gap-3 rounded-2xl border border-black/5 bg-white p-6 shadow-sm"
+                data-reveal
+                style={{ "--rd": `${i * 110}ms` }}
               >
                 <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15 text-gold-dark">
                   <ServiceIcon name={o.icon} />

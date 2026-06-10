@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
+import { useReveal } from "../lib/useReveal.js";
 
 function ScrollManager() {
   const { pathname, hash } = useLocation();
@@ -27,6 +28,7 @@ function ScrollManager() {
 }
 
 export default function Layout() {
+  useReveal();
   return (
     <>
       <ScrollManager />

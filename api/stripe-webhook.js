@@ -37,6 +37,10 @@ async function leerRaw(req) {
   return Buffer.concat(chunks);
 }
 
+// Tolerancia anti-replay recomendada por Stripe: rechazar firmas con un
+// timestamp a más de 5 minutos del reloj del servidor.
+const TOLERANCIA_FIRMA_S = 300;
+
 function verificarFirma(raw, firma, secreto) {
   if (!firma || !secreto) return false;
   const partes = Object.fromEntries(
@@ -45,6 +49,10 @@ function verificarFirma(raw, firma, secreto) {
   const t = partes.t;
   const v1 = partes.v1;
   if (!t || !v1) return false;
+  const ts = Number(t);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > TOLERANCIA_FIRMA_S) {
+    return false;
+  }
   const esperado = crypto
     .createHmac("sha256", secreto)
     .update(`${t}.${raw.toString("utf8")}`)

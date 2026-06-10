@@ -6,6 +6,17 @@
 //   NOTIFY_EMAIL  -> destinatario (carlosrivero@derechovirtual.org)
 //   FROM_EMAIL    -> cuenta Gmail autorizada que figura como remitente
 
+import {
+  parseBody,
+  str,
+  isEmail,
+  isPhone,
+  rateLimited,
+  rejectMethod,
+  tooMany,
+  isSpamBot,
+} from "./_lib/http.js";
+
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const SEND_URL =
   "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
@@ -65,32 +76,38 @@ async function getAccessToken(env) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ ok: false, error: "Método no permitido" });
+  if (rejectMethod(req, res, "POST")) return;
+  if (rateLimited(req, { key: "contacto", limit: 5, windowMs: 60_000 })) {
+    return tooMany(res);
   }
 
-  // Body (Vercel ya parsea JSON; por si acaso, parse defensivo)
-  let data = req.body;
-  if (!data || typeof data === "string") {
-    try {
-      data = JSON.parse(data || "{}");
-    } catch {
-      data = {};
-    }
-  }
+  const data = parseBody(req);
 
-  const nombre = (data.nombre || "").trim();
-  const telefono = (data.telefono || "").trim();
-  const email = (data.email || "").trim();
-  const tipoMulta = TIPOS[data.tipoMulta] || data.tipoMulta || "No indicado";
-  const descripcion = (data.descripcion || "").trim() || "(Sin descripción)";
-  const origen = data.origen || "/";
+  // Honeypot: si el campo oculto viene relleno es un bot. Respondemos OK
+  // (sin dar pistas) pero no enviamos nada.
+  if (isSpamBot(data)) return res.status(200).json({ ok: true });
+
+  const nombre = str(data.nombre, 120);
+  const telefono = str(data.telefono, 24);
+  const email = str(data.email, 160);
+  const tipoMulta = TIPOS[data.tipoMulta] || str(data.tipoMulta, 60) || "No indicado";
+  const descripcion = str(data.descripcion, 5000) || "(Sin descripción)";
+  const origen = str(data.origen, 200) || "/";
 
   if (!nombre || !telefono) {
     return res
       .status(400)
       .json({ ok: false, error: "Faltan datos obligatorios (nombre y teléfono)." });
+  }
+  if (!isPhone(telefono)) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "El teléfono no parece válido. Revísalo, por favor." });
+  }
+  if (email && !isEmail(email)) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "El email no parece válido. Revísalo, por favor." });
   }
 
   const env = process.env;

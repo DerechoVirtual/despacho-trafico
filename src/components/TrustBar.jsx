@@ -33,9 +33,14 @@ export default function TrustBar() {
   return (
     <section className="border-b border-black/5 bg-cream">
       <div className="mx-auto grid max-w-6xl gap-8 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
-        {ITEMS.map((it) => (
-          <div key={it.title}>
-            <span className="grid h-12 w-12 place-items-center rounded-xl bg-gold/15 text-gold-dark">
+        {ITEMS.map((it, i) => (
+          <div
+            key={it.title}
+            className="group"
+            data-reveal
+            style={{ "--rd": `${i * 110}ms` }}
+          >
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-gold/15 text-gold-dark ring-1 ring-gold/20 transition-all duration-300 group-hover:scale-110 group-hover:bg-gold/25 group-hover:shadow-lg group-hover:shadow-gold/30">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
